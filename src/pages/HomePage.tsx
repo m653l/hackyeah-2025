@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+// import logoUrl from '/logo.png?url';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -242,11 +243,21 @@ const HomePage: React.FC = () => {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
-                <Shield className="h-8 w-8 text-white" />
+                <img 
+                  src="/logo.png" 
+                  alt="ZUS Logo" 
+                  className="h-10 w-10 object-contain" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }}
+                />
+                <Shield className="h-10 w-10 text-white" style={{ display: 'none' }} />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-zus-navy">
-                  Symulator Emerytalny ZUS
+                  ZUS na Plus
                 </h1>
                 <p className="text-sm text-slate-600">Hackathon 2025</p>
               </div>
@@ -584,7 +595,7 @@ const HomePage: React.FC = () => {
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <div>
-                <div className="font-bold text-lg">Symulator Emerytalny ZUS</div>
+                <div className="font-bold text-lg">ZUS na Plus</div>
                 <div className="text-slate-400 text-sm">Hackathon 2025</div>
               </div>
             </div>

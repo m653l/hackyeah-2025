@@ -13,6 +13,7 @@ import {
   DollarSign,
   AlertTriangle
 } from 'lucide-react';
+// import logoUrl from '/logo.png?url';
 import AnimatedNumber from '../components/AnimatedNumber';
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -364,21 +365,46 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-zus-gray-200">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center">
-              <BarChart3 className="h-8 w-8 text-zus-orange mr-3" />
-              <h1 className="text-xl font-bold text-zus-navy">Dashboard Zaawansowany</h1>
-            </Link>
-            <nav className="hidden md:flex space-x-8">
-              <Link to="/" className="text-zus-navy hover:text-zus-orange transition-colors">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
+                <img 
+                  src="/logo.png" 
+                  alt="ZUS Logo" 
+                  className="h-10 w-10 object-contain" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }}
+                />
+                <BarChart3 className="h-10 w-10 text-white" style={{ display: 'none' }} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-zus-navy">
+                  ZUS na Plus
+                </h1>
+                <p className="text-sm text-slate-600">Hackathon 2025</p>
+              </div>
+            </div>
+            <nav className="hidden md:flex space-x-1">
+              <Link
+                to="/"
+                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
+              >
                 Strona główna
               </Link>
-              <Link to="/formularz" className="text-zus-navy hover:text-zus-orange transition-colors">
+              <Link
+                to="/formularz"
+                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
+              >
                 Symulacja
               </Link>
-              <span className="text-zus-orange font-semibold">Dashboard</span>
+              <span className="px-4 py-2 text-zus-orange bg-zus-orange/10 rounded-lg font-medium">
+                Dashboard
+              </span>
             </nav>
           </div>
         </div>

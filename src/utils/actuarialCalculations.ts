@@ -300,6 +300,15 @@ export function calculatePension(
 ): PensionCalculationResult {
   console.log('=== ROZPOCZĘCIE KALKULACJI EMERYTURY ===');
   console.log('Dane wejściowe:', { personData, fus20Params });
+  console.log('Wariant FUS20:', fus20Params.fus20Variant || fus20Params.scenario);
+  console.log('Parametry makroekonomiczne:', {
+    unemploymentRate: fus20Params.unemploymentRate,
+    wageGrowth: fus20Params.wageGrowth,
+    inflation: fus20Params.inflation,
+    realGDPGrowth: fus20Params.realGDPGrowth,
+    generalInflation: fus20Params.generalInflation,
+    pensionerInflation: fus20Params.pensionerInflation
+  });
 
   const currentYear = new Date().getFullYear();
   const yearsToRetirement = personData.retirementYear - currentYear;

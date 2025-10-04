@@ -74,9 +74,9 @@ export const generateUserPDFReport = (data: UserReportData): void => {
   doc.setProperties({
     title: 'Raport Prognozy Emerytalnej ZUS',
     subject: 'Prognoza emerytalna',
-    author: 'Symulator Emerytalny ZUS',
+    author: 'ZUS na Plus',
     keywords: 'emerytura, ZUS, prognoza',
-    creator: 'Symulator Emerytalny ZUS'
+    creator: 'ZUS na Plus'
   });
 
   const pageWidth = doc.internal.pageSize.width;
@@ -324,7 +324,7 @@ export const generateUserPDFReport = (data: UserReportData): void => {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(100, 100, 100);
-  addPolishText('Raport wygenerowany przez Symulator Emerytalny ZUS - narzedie edukacyjne', margin, footerY);
+  addPolishText('Raport wygenerowany przez ZUS na Plus - narzedie edukacyjne', margin, footerY);
   addPolishText('Wyniki maja charakter prognostyczny i moga roznic sie od rzeczywistych swiadczen.', margin, footerY + 8);
   addPolishText('© 2025 Zaklad Ubezpieczen Spolecznych', pageWidth - margin, footerY + 8, { align: 'right' });
 

@@ -1,16 +1,116 @@
-import React, { useState } from 'react';
-import { Settings, TrendingUp, Calendar, Calculator, BarChart3, Sliders } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, TrendingUp, Calendar, Calculator, BarChart3, Sliders, RotateCcw } from 'lucide-react';
 
 interface AdvancedDashboardProps {
   onParameterChange: (parameter: string, value: any) => void;
   currentParameters: any;
 }
 
+// Klucze localStorage
+const DASHBOARD_STORAGE_KEY = 'advancedDashboard';
+const DASHBOARD_TAB_KEY = 'advancedDashboardTab';
+
+// Funkcje pomocnicze dla localStorage
+const saveDashboardData = (data: any) => {
+  try {
+    localStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(data));
+  } catch (error) {
+    console.warn('Nie można zapisać danych dashboard do localStorage:', error);
+  }
+};
+
+const getSavedDashboardData = () => {
+  try {
+    const saved = localStorage.getItem(DASHBOARD_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch (error) {
+    console.warn('Nie można odczytać danych dashboard z localStorage:', error);
+    return {};
+  }
+};
+
+const saveActiveTab = (tab: string) => {
+  try {
+    localStorage.setItem(DASHBOARD_TAB_KEY, tab);
+  } catch (error) {
+    console.warn('Nie można zapisać aktywnej zakładki do localStorage:', error);
+  }
+};
+
+const getSavedActiveTab = () => {
+  try {
+    return localStorage.getItem(DASHBOARD_TAB_KEY) || 'historical';
+  } catch (error) {
+    console.warn('Nie można odczytać aktywnej zakładki z localStorage:', error);
+    return 'historical';
+  }
+};
+
+const clearDashboardData = () => {
+  try {
+    localStorage.removeItem(DASHBOARD_STORAGE_KEY);
+    localStorage.removeItem(DASHBOARD_TAB_KEY);
+  } catch (error) {
+    console.warn('Nie można wyczyścić danych dashboard z localStorage:', error);
+  }
+};
+
 export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
   onParameterChange,
   currentParameters
 }) => {
-  const [activeTab, setActiveTab] = useState('historical');
+  const [activeTab, setActiveTab] = useState(getSavedActiveTab());
+  const [dashboardData, setDashboardData] = useState(getSavedDashboardData());
+
+  // Przywracanie danych przy inicjalizacji
+  useEffect(() => {
+    const savedData = getSavedDashboardData();
+    if (Object.keys(savedData).length > 0) {
+      // Przywróć wszystkie zapisane parametry
+      Object.keys(savedData).forEach(key => {
+        if (savedData[key] !== undefined && savedData[key] !== null) {
+          onParameterChange(key, savedData[key]);
+        }
+      });
+      setDashboardData(savedData);
+    }
+  }, []);
+
+  // Funkcja do aktualizacji parametrów z zapisem do localStorage
+  const handleParameterChange = (parameter: string, value: any) => {
+    const updatedData = { ...dashboardData, [parameter]: value };
+    setDashboardData(updatedData);
+    saveDashboardData(updatedData);
+    onParameterChange(parameter, value);
+  };
+
+  // Funkcja do zmiany zakładki z zapisem
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId);
+    saveActiveTab(tabId);
+  };
+
+  // Funkcja resetowania ustawień
+  const handleResetSettings = () => {
+    if (window.confirm('Czy na pewno chcesz zresetować wszystkie ustawienia Dashboard Zaawansowany?')) {
+      clearDashboardData();
+      setDashboardData({});
+      setActiveTab('historical');
+      
+      // Wyczyść wszystkie parametry w komponencie nadrzędnym
+      const keysToReset = [
+        'historicalSalaries', 'salaryGrowthRate', 'contributionValorizationRate', 
+        'inflationRate', 'forecastHorizon', 'sicknessPeriods', 'mainAccount', 
+        'subAccount', 'showAccountGrowth', 'includeValorization', 'fus20Variant',
+        'unemploymentRate', 'realWageGrowth', 'generalInflation', 
+        'contributionCollection', 'realGDPGrowth', 'pensionerInflation'
+      ];
+      
+      keysToReset.forEach(key => {
+        onParameterChange(key, undefined);
+      });
+    }
+  };
 
   const tabs = [
     { id: 'historical', label: 'Dane Historyczne', icon: Calendar },
@@ -24,13 +124,26 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
   return (
     <div className="w-full bg-white rounded-lg shadow p-6">
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Dashboard Zaawansowany
-        </h3>
-        <p className="text-sm text-gray-600">
-          Modyfikuj parametry i założenia do obliczeń emerytalnych
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Dashboard Zaawansowany
+            </h3>
+            <p className="text-sm text-gray-600">
+              Modyfikuj parametry i założenia do obliczeń emerytalnych
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleResetSettings}
+            className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 flex items-center gap-1"
+            title="Resetuj wszystkie ustawienia dashboard"
+          >
+            <RotateCcw className="h-3 w-3" />
+            Resetuj ustawienia
+          </button>
+        </div>
       </div>
 
       {/* Zakładki */}
@@ -42,7 +155,7 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                   activeTab === tab.id
                     ? 'border-zus-orange text-zus-orange'
@@ -61,42 +174,44 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
       <div className="space-y-6">
         {activeTab === 'historical' && (
           <HistoricalDataPanel 
-            onParameterChange={onParameterChange}
+            onParameterChange={handleParameterChange}
             currentParameters={currentParameters}
+            savedData={dashboardData}
           />
         )}
         
         {activeTab === 'future' && (
           <FutureForecastPanel 
-            onParameterChange={onParameterChange}
+            onParameterChange={handleParameterChange}
             currentParameters={currentParameters}
           />
         )}
         
         {activeTab === 'sickness' && (
           <SicknessPeriodsPanel 
-            onParameterChange={onParameterChange}
+            onParameterChange={handleParameterChange}
             currentParameters={currentParameters}
+            savedData={dashboardData}
           />
         )}
         
         {activeTab === 'zus_account' && (
           <ZUSAccountPanel 
-            onParameterChange={onParameterChange}
+            onParameterChange={handleParameterChange}
             currentParameters={currentParameters}
           />
         )}
         
         {activeTab === 'fus20' && (
           <FUS20VariantsPanel 
-            onParameterChange={onParameterChange}
+            onParameterChange={handleParameterChange}
             currentParameters={currentParameters}
           />
         )}
         
         {activeTab === 'macro' && (
           <MacroParametersPanel 
-            onParameterChange={onParameterChange}
+            onParameterChange={handleParameterChange}
             currentParameters={currentParameters}
           />
         )}
@@ -109,9 +224,10 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
 const HistoricalDataPanel: React.FC<{
   onParameterChange: (parameter: string, value: any) => void;
   currentParameters: any;
-}> = ({ onParameterChange, currentParameters }) => {
+  savedData: any;
+}> = ({ onParameterChange, currentParameters, savedData }) => {
   const [historicalSalaries, setHistoricalSalaries] = useState(
-    currentParameters.historicalSalaries || []
+    savedData.historicalSalaries || currentParameters.historicalSalaries || []
   );
 
   const addHistoricalSalary = () => {
@@ -282,9 +398,10 @@ const FutureForecastPanel: React.FC<{
 const SicknessPeriodsPanel: React.FC<{
   onParameterChange: (parameter: string, value: any) => void;
   currentParameters: any;
-}> = ({ onParameterChange, currentParameters }) => {
+  savedData: any;
+}> = ({ onParameterChange, currentParameters, savedData }) => {
   const [sicknessPeriods, setSicknessPeriods] = useState(
-    currentParameters.sicknessPeriods || []
+    savedData.sicknessPeriods || currentParameters.sicknessPeriods || []
   );
 
   const addSicknessPeriod = () => {
@@ -495,22 +612,46 @@ const FUS20VariantsPanel: React.FC<{
 }> = ({ onParameterChange, currentParameters }) => {
   const variants = [
     {
-      id: 'variant1',
+      id: 'intermediate',
       name: 'Wariant 1 (Pośredni)',
       description: 'Umiarkowane założenia demograficzne i ekonomiczne',
-      characteristics: ['Średni wzrost PKB: 2.8%', 'Stopa bezrobocia: 4.5%', 'Inflacja: 2.5%']
+      characteristics: ['Średni wzrost PKB: 2.8%', 'Stopa bezrobocia: 4.5%', 'Inflacja: 2.5%'],
+      macroParams: {
+        realGDPGrowth: 2.8,
+        unemploymentRate: 4.5,
+        generalInflation: 2.5,
+        realWageGrowth: 2.8,
+        pensionerInflation: 2.3,
+        contributionCollection: 95.5
+      }
     },
     {
-      id: 'variant2', 
+      id: 'pessimistic', 
       name: 'Wariant 2 (Pesymistyczny)',
       description: 'Konserwatywne założenia, niższy wzrost gospodarczy',
-      characteristics: ['Średni wzrost PKB: 2.2%', 'Stopa bezrobocia: 6.0%', 'Inflacja: 3.0%']
+      characteristics: ['Średni wzrost PKB: 2.2%', 'Stopa bezrobocia: 6.0%', 'Inflacja: 3.0%'],
+      macroParams: {
+        realGDPGrowth: 2.2,
+        unemploymentRate: 6.0,
+        generalInflation: 3.0,
+        realWageGrowth: 2.2,
+        pensionerInflation: 2.8,
+        contributionCollection: 92.0
+      }
     },
     {
-      id: 'variant3',
+      id: 'optimistic',
       name: 'Wariant 3 (Optymistyczny)', 
       description: 'Pozytywne założenia, wyższy wzrost gospodarczy',
-      characteristics: ['Średni wzrost PKB: 3.5%', 'Stopa bezrobocia: 3.5%', 'Inflacja: 2.0%']
+      characteristics: ['Średni wzrost PKB: 3.5%', 'Stopa bezrobocia: 3.5%', 'Inflacja: 2.0%'],
+      macroParams: {
+        realGDPGrowth: 3.5,
+        unemploymentRate: 3.5,
+        generalInflation: 2.0,
+        realWageGrowth: 3.5,
+        pensionerInflation: 1.8,
+        contributionCollection: 97.0
+      }
     }
   ];
 
@@ -530,7 +671,13 @@ const FUS20VariantsPanel: React.FC<{
                 ? 'border-zus-orange bg-orange-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
-            onClick={() => onParameterChange('fus20Variant', variant.id)}
+            onClick={() => {
+              onParameterChange('fus20Variant', variant.id);
+              // Automatycznie ustaw parametry makroekonomiczne dla wybranego wariantu
+              Object.entries(variant.macroParams).forEach(([key, value]) => {
+                onParameterChange(key, value);
+              });
+            }}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -538,7 +685,13 @@ const FUS20VariantsPanel: React.FC<{
                   <input
                     type="radio"
                     checked={currentParameters.fus20Variant === variant.id}
-                    onChange={() => onParameterChange('fus20Variant', variant.id)}
+                    onChange={() => {
+                      onParameterChange('fus20Variant', variant.id);
+                      // Automatycznie ustaw parametry makroekonomiczne dla wybranego wariantu
+                      Object.entries(variant.macroParams).forEach(([key, value]) => {
+                        onParameterChange(key, value);
+                      });
+                    }}
                     className="h-4 w-4 text-zus-orange focus:ring-zus-orange"
                   />
                   <h5 className="font-medium text-gray-900">{variant.name}</h5>

@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { calculatePension, type FUS20Parameters, type PersonData, type HistoricalSalary, type SicknessPeriod } from '../utils/actuarialCalculations';
 import { ProfessionalContext } from '../components/ProfessionalContext';
 import { AdvancedDashboard } from '../components/AdvancedDashboard';
+// import logoUrl from '/logo.png?url';
 
 const formSchema = z.object({
   age: z.number().min(18, 'Wiek musi być większy niż 18 lat').max(67, 'Wiek nie może przekraczać 67 lat'),
@@ -85,6 +86,21 @@ const FormPage: React.FC = () => {
     return {};
   };
 
+  // Funkcja do odczytywania parametrów dashboard z localStorage
+  const getSavedDashboardData = () => {
+    try {
+      const savedData = localStorage.getItem('advancedDashboard');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        console.log('Załadowane parametry dashboard z localStorage:', parsed);
+        return parsed;
+      }
+    } catch (error) {
+      console.error('Błąd podczas odczytywania parametrów dashboard z localStorage:', error);
+    }
+    return {};
+  };
+
   // Funkcja do zapisywania danych do localStorage
   const saveFormData = (data: FormData) => {
     try {
@@ -135,6 +151,39 @@ const FormPage: React.FC = () => {
       });
     }
   }, [setValue]);
+
+  // useEffect do ładowania parametrów dashboard z localStorage
+  useEffect(() => {
+    const savedDashboardData = getSavedDashboardData();
+    if (Object.keys(savedDashboardData).length > 0) {
+      console.log('Aktualizowanie parametrów dashboard:', savedDashboardData);
+      setDashboardParameters(prev => ({
+        ...prev,
+        ...savedDashboardData
+      }));
+    }
+  }, []);
+
+  // useEffect do nasłuchiwania zmian w localStorage (gdy użytkownik zmienia ustawienia w Dashboard)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'advancedDashboard' && e.newValue) {
+        try {
+          const newData = JSON.parse(e.newValue);
+          console.log('Wykryto zmianę w localStorage dashboard:', newData);
+          setDashboardParameters(prev => ({
+            ...prev,
+            ...newData
+          }));
+        } catch (error) {
+          console.error('Błąd podczas parsowania nowych danych dashboard:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const age = watch('age');
   // const workStartYear = watch('workStartYear');
@@ -240,19 +289,44 @@ const FormPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-zus-gray-200">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link to="/" className="flex items-center">
-              <Calculator className="h-8 w-8 text-zus-orange mr-3" />
-              <h1 className="text-xl font-bold text-zus-navy">Symulator Emerytalny ZUS</h1>
-            </Link>
-            <nav className="hidden md:flex space-x-8">
-              <Link to="/" className="text-zus-navy hover:text-zus-orange transition-colors">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
+                <img 
+                  src="/logo.png" 
+                  alt="ZUS Logo" 
+                  className="h-10 w-10 object-contain" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'block';
+                  }}
+                />
+                <Calculator className="h-10 w-10 text-white" style={{ display: 'none' }} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-zus-navy">
+                  ZUS na Plus
+                </h1>
+                <p className="text-sm text-slate-600">Hackathon 2025</p>
+              </div>
+            </div>
+            <nav className="hidden md:flex space-x-1">
+              <Link
+                to="/"
+                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
+              >
                 Strona główna
               </Link>
-              <span className="text-zus-orange font-semibold">Symulacja</span>
-              <Link to="/dashboard" className="text-zus-navy hover:text-zus-orange transition-colors">
+              <span className="px-4 py-2 text-zus-orange bg-zus-orange/10 rounded-lg font-medium">
+                Symulacja
+              </span>
+              <Link
+                to="/dashboard"
+                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
+              >
                 Dashboard
               </Link>
             </nav>
