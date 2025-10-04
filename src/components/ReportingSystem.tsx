@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Download, FileText, MapPin, BarChart3, Calendar, User, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { generateUserPDFReport, type UserReportData } from '../utils/reportGenerator';
-import { findDistrictByPostalCode, getNationalAverage, type DistrictData } from '../data/districtData';
+import { findDistrictByPostalCode, type DistrictData } from '../data/districtData';
 
 interface ReportingSystemProps {
   pensionData: any;
@@ -17,7 +17,7 @@ export const ReportingSystem: React.FC<ReportingSystemProps> = ({
   const [postalCode, setPostalCode] = useState('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [districtData, setDistrictData] = useState<DistrictData | null>(null);
-  const [nationalAverage, setNationalAverage] = useState(getNationalAverage());
+
 
   const handlePostalCodeChange = (value: string) => {
     setPostalCode(value);

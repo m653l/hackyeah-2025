@@ -92,7 +92,7 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
     console.log('Value:', value);
     console.log('Current dashboardData:', dashboardData);
     
-    setDashboardData(prevData => {
+    setDashboardData((prevData: any) => {
       const updatedData = { ...prevData, [parameter]: value };
       console.log('Updated data (using prevData):', updatedData);
       
