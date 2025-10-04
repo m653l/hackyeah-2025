@@ -1,0 +1,126 @@
+# POSTĘP IMPLEMENTACJI - SYMULATOR EMERYTALNY ZUS
+# Hackathon 2025 - Tracking zadań krytycznych
+
+## STATUS OGÓLNY
+🎯 **Cel:** Implementacja 4 funkcjonalności o priorytecie krytycznym
+⏱️ **Szacowany czas:** 16-24 godziny
+📅 **Data rozpoczęcia:** 2025-01-25
+
+---
+
+## 🔴 PRIORYTET KRYTYCZNY - ZADANIA DO WYKONANIA
+
+### 1. WYNIK W DWÓCH KWOTACH (rzeczywista/urealniona)
+**Szacowany czas:** 4-6 godzin
+
+#### Subtaski:
+✅ **1.1** Rozszerzyć interface PensionCalculationResult o pola realPensionValue i nominalPensionValue (30 min)
+✅ **1.2** Zmodyfikować funkcję calculatePension() w actuarialCalculations.ts (1.5h)
+✅ **1.3** Dodać kalkulację wartości realnej z uwzględnieniem inflacji (1h)
+✅ **1.4** Zaktualizować ResultsPage.tsx - wyświetlanie dwóch kwot (1.5h)
+❌ **1.5** Zaktualizować generator PDF - dodać obie kwoty do raportu (30 min)
+
+**Status:** 🔄 W TRAKCIE (80% ukończone)
+**Następny krok:** Zaktualizować generator PDF
+
+---
+
+### 2. STOPA ZASTĄPIENIA (calculation and display)
+**Szacowany czas:** 3-4 godziny
+
+#### Subtaski:
+❌ **2.1** Dodać pole replacementRate do PensionCalculationResult (15 min)
+❌ **2.2** Zaimplementować kalkulację stopy zastąpienia w calculatePension() (1h)
+❌ **2.3** Dodać funkcję pomocniczą calculateReplacementRate() (45 min)
+❌ **2.4** Wyświetlić stopę zastąpienia w ResultsPage.tsx (1h)
+❌ **2.5** Dodać stopę zastąpienia do raportu PDF (30 min)
+
+**Status:** ❌ TODO
+**Następny krok:** Dodać pole do interfejsu po zakończeniu zadania 1
+
+---
+
+### 3. OPCJA ZWOLNIEŃ LEKARSKICH W UI
+**Szacowany czas:** 4-5 godzin
+
+#### Subtaski:
+❌ **3.1** Dodać checkbox "Uwzględnij zwolnienia lekarskie" do FormPage.tsx (30 min)
+❌ **3.2** Rozszerzyć walidację formularza o nowe pole (30 min)
+❌ **3.3** Przekazać opcję do kalkulacji aktuarialnej (30 min)
+❌ **3.4** Zmodyfikować calculatePension() - uwzględnienie opcji (1.5h)
+❌ **3.5** Wyświetlić wpływ zwolnień w ResultsPage.tsx (1.5h)
+
+**Status:** ❌ TODO
+**Następny krok:** Dodać checkbox do formularza
+
+---
+
+### 4. PROGNOZA OPÓŹNIENIA EMERYTURY W UI
+**Szacowany czas:** 5-6 godzin
+
+#### Subtaski:
+❌ **4.1** Rozszerzyć ResultsPage.tsx o sekcję "Analiza opóźnienia" (1h)
+❌ **4.2** Dodać kalkulację dla opóźnienia 1, 2, 5 lat (1.5h)
+❌ **4.3** Stworzyć komponent DelayAnalysis.tsx (2h)
+❌ **4.4** Dodać wizualizację wzrostu świadczenia (1h)
+❌ **4.5** Zaktualizować generator PDF o analizę opóźnienia (30 min)
+
+**Status:** ❌ TODO
+**Następny krok:** Rozszerzyć ResultsPage o nową sekcję
+
+---
+
+## 📊 POSTĘP OGÓLNY
+
+### Ukończone zadania: 0/4 (0%)
+### W trakcie: 1/4 (25%)
+### Do zrobienia: 3/4 (75%)
+
+### Ukończone subtaski: 0/18 (0%)
+### W trakcie: 1/18 (6%)
+### Pozostałe subtaski: 17/18 (94%)
+
+---
+
+## 🎯 PLAN DZIAŁANIA
+
+### DZIEŃ 1 (8h):
+1. **Godziny 1-2:** Zadanie 1.1-1.3 (Wynik w dwóch kwotach - backend)
+2. **Godziny 3-4:** Zadanie 1.4-1.5 (Wynik w dwóch kwotach - frontend)
+3. **Godziny 5-6:** Zadanie 2.1-2.3 (Stopa zastąpienia - backend)
+4. **Godziny 7-8:** Zadanie 2.4-2.5 (Stopa zastąpienia - frontend)
+
+### DZIEŃ 2 (8h):
+1. **Godziny 1-3:** Zadanie 3.1-3.5 (Opcja zwolnień lekarskich)
+2. **Godziny 4-8:** Zadanie 4.1-4.5 (Prognoza opóźnienia emerytury)
+
+---
+
+## 📝 NOTATKI TECHNICZNE
+
+### Pliki do modyfikacji:
+- `src/utils/actuarialCalculations.ts` - rozszerzenie kalkulacji
+- `src/pages/FormPage.tsx` - dodanie opcji zwolnień
+- `src/pages/ResultsPage.tsx` - wyświetlanie nowych danych
+- `src/utils/reportGenerator.ts` - aktualizacja PDF
+
+### Zależności:
+- Zadanie 2 zależy od ukończenia zadania 1 (wspólny interface)
+- Zadanie 3 i 4 mogą być wykonywane równolegle
+- Wszystkie zadania wymagają testowania w przeglądarce
+
+---
+
+## 🔄 LOG ZMIAN
+
+**2025-01-25 - Inicjalizacja**
+- Utworzono plik postępu
+- Zdefiniowano 4 zadania krytyczne
+- Podzielono na 18 subtasków
+- Ustalono plan 2-dniowy
+- Rozpoczęto zadanie 1.1 - rozszerzenie interfejsu
+
+---
+
+**OSTATNIA AKTUALIZACJA:** 2025-01-25
+**AKTUALNY STATUS:** Rozpoczęcie implementacji - zadanie 1.1 w trakcie

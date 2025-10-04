@@ -1,0 +1,498 @@
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  TrendingUp, 
+  Calendar, 
+  DollarSign, 
+  AlertTriangle, 
+  Info,
+  Download,
+  MapPin
+} from 'lucide-react';
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { 
+  calculateRetirementDelay, 
+  type PensionCalculationResult, 
+  type PersonData, 
+  type FUS20Parameters 
+} from '../utils/actuarialCalculations';
+import { 
+  getRetirementDelayStatistics
+} from '../utils/dataIntegration';
+import { 
+  generateUserPDFReport, 
+  type UserReportData 
+} from '../utils/reportGenerator';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface LocationState {
+  formData: any;
+  pensionResult: PensionCalculationResult;
+  personData: PersonData;
+  fus20Params: FUS20Parameters;
+}
+
+const ResultsPage: React.FC = () => {
+  const location = useLocation();
+  const state = location.state as LocationState;
+  const [postalCode, setPostalCode] = useState<string>('');
+  const [showPostalCodeInput, setShowPostalCodeInput] = useState<boolean>(false);
+
+  if (!state || !state.pensionResult) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Brak danych do wyświetlenia</h2>
+          <Link to="/formularz" className="text-zus-orange hover:text-zus-orange-dark">
+            Wróć do formularza
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const { pensionResult, personData, fus20Params, formData } = state;
+
+  // Analiza opóźnienia emerytury
+  const delayAnalysis = calculateRetirementDelay(personData, 2, fus20Params);
+  
+  // Statystyki opóźnienia emerytury
+  const delayStats = getRetirementDelayStatistics();
+
+  // Funkcja do generowania raportu PDF
+  const handleGeneratePDFReport = () => {
+    const reportData: UserReportData = {
+      personalInfo: {
+        age: personData.age,
+        gender: personData.gender,
+        salary: personData.salary,
+        workStartYear: personData.workStartYear || new Date().getFullYear() - (personData.age - 18),
+        plannedRetirementYear: personData.retirementYear || (new Date().getFullYear() + pensionResult.yearsToRetirement)
+      },
+      pensionResults: {
+        monthlyPension: pensionResult.monthlyPension,
+        replacementRate: pensionResult.replacementRate,
+        yearsToRetirement: pensionResult.yearsToRetirement,
+        totalContributions: pensionResult.totalContributions,
+        realPensionValue: pensionResult.realPensionValue,
+        projectedInflation: pensionResult.projectedInflation,
+        initialCapital: pensionResult.initialCapital,
+        valorizedContributions: pensionResult.valorizedContributions,
+        lifeExpectancy: pensionResult.lifeExpectancy
+      },
+      fus20Params: {
+        scenario: fus20Params.scenario === 'intermediate' ? 'Pośredni' : 
+                 fus20Params.scenario === 'pessimistic' ? 'Pesymistyczny' : 'Optymistyczny',
+        unemploymentRate: fus20Params.unemploymentRate,
+        realWageGrowth: fus20Params.wageGrowthRate,
+        contributionCollection: fus20Params.contributionCollectionRate
+      },
+      delayAnalysis: {
+        originalPension: delayAnalysis.originalPension,
+        delayedPension: delayAnalysis.delayedPension,
+        increasePercentage: delayAnalysis.increasePercentage
+      },
+      postalCode: postalCode || undefined,
+      generatedAt: new Date()
+    };
+
+    generateUserPDFReport(reportData);
+  };
+
+  // Walidacja kodu pocztowego
+  const isValidPostalCode = (code: string): boolean => {
+    const postalCodeRegex = /^\d{2}-\d{3}$/;
+    return postalCodeRegex.test(code);
+  };
+
+  // Dane do wykresów
+  const contributionProjectionData = {
+    labels: Array.from({ length: pensionResult.yearsToRetirement }, (_, i) => 
+      new Date().getFullYear() + i + 1
+    ),
+    datasets: [
+      {
+        label: 'Składki emerytalne (zł)',
+        data: Array.from({ length: pensionResult.yearsToRetirement }, (_, i) => 
+          (personData.salary * 12 * 0.1952) * (i + 1)
+        ),
+        borderColor: 'rgb(255, 179, 79)',
+        backgroundColor: 'rgba(255, 179, 79, 0.2)',
+        tension: 0.1,
+      },
+    ],
+  };
+
+  const benefitComparisonData = {
+    labels: ['Obecna emerytura', 'Opóźnienie o 2 lata', 'Średnia krajowa'],
+    datasets: [
+      {
+        label: 'Miesięczna emerytura (zł)',
+        data: [
+          pensionResult.monthlyPension,
+          delayAnalysis.delayedPension,
+          2850 // Średnia krajowa
+        ],
+        backgroundColor: [
+          'rgba(255, 179, 79, 0.8)',
+          'rgba(0, 153, 63, 0.8)',
+          'rgba(108, 117, 125, 0.8)',
+        ],
+        borderColor: [
+          'rgb(255, 179, 79)',
+          'rgb(0, 153, 63)',
+          'rgb(108, 117, 125)',
+        ],
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'Prognoza składek emerytalnych',
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value: any) {
+            return new Intl.NumberFormat('pl-PL', {
+              style: 'currency',
+              currency: 'PLN',
+              minimumFractionDigits: 0,
+            }).format(value);
+          },
+        },
+      },
+    },
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'Porównanie wysokości świadczeń',
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value: any) {
+            return new Intl.NumberFormat('pl-PL', {
+              style: 'currency',
+              currency: 'PLN',
+              minimumFractionDigits: 0,
+            }).format(value);
+          },
+        },
+      },
+    },
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link 
+              to="/formularz" 
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Wróć do formularza
+            </Link>
+            <h1 className="text-xl font-semibold text-gray-900">Wyniki prognozy emerytalnej</h1>
+            <div className="w-32"></div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Kluczowe wskaźniki */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-zus-orange" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Miesięczna emerytura</p>
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-gray-900">
+                    <span className="text-sm font-medium text-gray-600">Nominalna: </span>
+                    {new Intl.NumberFormat('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN',
+                      minimumFractionDigits: 0,
+                    }).format(pensionResult.nominalPensionValue)}
+                  </p>
+                  <p className="text-lg font-bold text-zus-green">
+                    <span className="text-sm font-medium text-gray-600">Realna: </span>
+                    {new Intl.NumberFormat('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN',
+                      minimumFractionDigits: 0,
+                    }).format(pensionResult.realPensionValue)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <TrendingUp className="h-8 w-8 text-zus-green" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Stopa zastąpienia</p>
+                <div className="space-y-1">
+                  <p className="text-2xl font-bold text-gray-900">
+                    {pensionResult.replacementRate.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {pensionResult.replacementRate >= 40 
+                      ? '✅ Dobra stopa zastąpienia' 
+                      : pensionResult.replacementRate >= 30 
+                        ? '⚠️ Średnia stopa zastąpienia'
+                        : '❌ Niska stopa zastąpienia'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <Calendar className="h-8 w-8 text-zus-blue" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Lata do emerytury</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {pensionResult.yearsToRetirement}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center">
+              <DollarSign className="h-8 w-8 text-zus-navy" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Łączne składki</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {new Intl.NumberFormat('pl-PL', {
+                    style: 'currency',
+                    currency: 'PLN',
+                    minimumFractionDigits: 0,
+                  }).format(pensionResult.totalContributions)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Kod pocztowy (opcjonalny) */}
+        {showPostalCodeInput && (
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <MapPin className="h-5 w-5 mr-2 text-zus-blue" />
+              Kod pocztowy (opcjonalny)
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Podanie kodu pocztowego pomoże nam w analizie regionalnej wykorzystania symulatora.
+            </p>
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label htmlFor="postalCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Kod pocztowy (format: XX-XXX)
+                </label>
+                <input
+                  type="text"
+                  id="postalCode"
+                  value={postalCode}
+                  onChange={(e) => setPostalCode(e.target.value)}
+                  placeholder="np. 00-001"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+                  maxLength={6}
+                />
+                {postalCode && !isValidPostalCode(postalCode) && (
+                  <p className="text-sm text-red-600 mt-1">Nieprawidłowy format kodu pocztowego</p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowPostalCodeInput(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Pomiń
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Przyciski akcji */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <Link
+            to="/dashboard"
+            className="bg-zus-orange text-white px-6 py-3 rounded-lg hover:bg-zus-orange-dark transition-colors flex items-center"
+          >
+            <TrendingUp className="h-5 w-5 mr-2" />
+            Zaawansowana analiza
+          </Link>
+          <button 
+            onClick={handleGeneratePDFReport}
+            className="bg-white text-zus-orange border border-zus-orange px-6 py-3 rounded-lg hover:bg-zus-orange hover:text-white transition-colors flex items-center"
+          >
+            <Download className="h-5 w-5 mr-2" />
+            Pobierz raport PDF
+          </button>
+          {!showPostalCodeInput && (
+            <button 
+              onClick={() => setShowPostalCodeInput(true)}
+              className="bg-white text-zus-blue border border-zus-blue px-6 py-3 rounded-lg hover:bg-zus-blue hover:text-white transition-colors flex items-center"
+            >
+              <MapPin className="h-5 w-5 mr-2" />
+              Dodaj kod pocztowy
+            </button>
+          )}
+          <button className="bg-white text-gray-700 border border-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors">
+            Udostępnij wyniki
+          </button>
+        </div>
+
+        {/* Wykresy */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Prognoza składek emerytalnych</h3>
+            <Line data={contributionProjectionData} options={chartOptions} />
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Porównanie wysokości świadczeń</h3>
+            <Bar data={benefitComparisonData} options={barChartOptions} />
+          </div>
+        </div>
+
+        {/* Szczegółowa analiza */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Info className="h-5 w-5 mr-2 text-zus-blue" />
+              Wpływ inflacji i waloryzacji
+            </h3>
+            <div className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Nominalna wartość emerytury:</span>
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('pl-PL', {
+                    style: 'currency',
+                    currency: 'PLN',
+                    minimumFractionDigits: 0,
+                  }).format(pensionResult.monthlyPension)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Realna wartość (dzisiejsza siła nabywcza):</span>
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('pl-PL', {
+                    style: 'currency',
+                    currency: 'PLN',
+                    minimumFractionDigits: 0,
+                  }).format(pensionResult.realPensionValue)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Prognozowana inflacja:</span>
+                <span className="font-semibold">{pensionResult.projectedInflation.toFixed(1)}% rocznie</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Kapitał początkowy:</span>
+                <span className="font-semibold">
+                  {new Intl.NumberFormat('pl-PL', {
+                    style: 'currency',
+                    currency: 'PLN',
+                    minimumFractionDigits: 0,
+                  }).format(pensionResult.initialCapital)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <AlertTriangle className="h-5 w-5 mr-2 text-zus-orange" />
+              Rekomendacje i analiza opóźnienia
+            </h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-zus-orange bg-opacity-10 rounded-lg">
+                <h4 className="font-semibold text-zus-orange mb-2">Opóźnienie emerytury o 2 lata</h4>
+                <p className="text-sm text-gray-700 mb-2">
+                  Zwiększenie miesięcznej emerytury o{' '}
+                  <span className="font-semibold">
+                    {new Intl.NumberFormat('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN',
+                      minimumFractionDigits: 0,
+                    }).format(delayAnalysis.delayedPension - delayAnalysis.originalPension)}
+                  </span>
+                  {' '}({delayAnalysis.increasePercentage.toFixed(1)}%)
+                </p>
+                <p className="text-xs text-gray-600">
+                  {delayStats.national.delay2YearsPlus.toFixed(1)}% Polaków opóźnia emeryturę o 2 lata lub więcej
+                </p>
+              </div>
+              
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-700 mb-2">Dodatkowe informacje</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>• Przewidywana długość życia: {pensionResult.lifeExpectancy.toFixed(1)} lat</li>
+                  <li>• Waloryzowane składki: {new Intl.NumberFormat('pl-PL', {
+                    style: 'currency',
+                    currency: 'PLN',
+                    minimumFractionDigits: 0,
+                  }).format(pensionResult.valorizedContributions)}</li>
+                  <li>• Scenariusz FUS20: {fus20Params.scenario === 'intermediate' ? 'Pośredni' : 
+                    fus20Params.scenario === 'pessimistic' ? 'Pesymistyczny' : 'Optymistyczny'}</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default ResultsPage;
