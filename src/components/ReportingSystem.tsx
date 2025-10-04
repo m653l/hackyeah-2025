@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Download, FileText, MapPin, BarChart3, Calendar, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, FileText, MapPin, BarChart3, Calendar, User, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { generateUserPDFReport, type UserReportData } from '../utils/reportGenerator';
+import { findDistrictByPostalCode, getNationalAverage, type DistrictData } from '../data/districtData';
 
 interface ReportingSystemProps {
   pensionData: any;
@@ -14,9 +16,20 @@ export const ReportingSystem: React.FC<ReportingSystemProps> = ({
 }) => {
   const [postalCode, setPostalCode] = useState('');
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [districtData, setDistrictData] = useState<DistrictData | null>(null);
+  const [nationalAverage, setNationalAverage] = useState(getNationalAverage());
 
   const handlePostalCodeChange = (value: string) => {
     setPostalCode(value);
+    
+    // Wyszukaj dane dla wprowadzonego kodu pocztowego
+    if (value.length >= 5) {
+      const district = findDistrictByPostalCode(value);
+      setDistrictData(district);
+    } else {
+      setDistrictData(null);
+    }
+    
     onPostalCodeChange?.(value);
   };
 
@@ -24,52 +37,53 @@ export const ReportingSystem: React.FC<ReportingSystemProps> = ({
     setIsGeneratingReport(true);
     
     try {
-      // Przygotowanie danych do raportu
-      const reportData = {
+      // Przygotowanie danych do raportu w formacie UserReportData
+      const reportData: UserReportData = {
         personalInfo: {
-          age: personData.age,
-          gender: personData.gender,
-          salary: personData.salary,
-          startYear: personData.startYear,
-          retirementYear: personData.retirementYear,
-          includeSickLeave: personData.includeSickLeave,
-          accountBalance: personData.accountBalance,
-          subAccountBalance: personData.subAccountBalance,
-          professionalGroup: personData.professionalGroup
+          age: personData.age || 0,
+          gender: personData.gender === 'Kobieta' ? 'female' : 'male',
+          salary: personData.salary || 0,
+          workStartYear: personData.startYear || new Date().getFullYear(),
+          plannedRetirementYear: personData.retirementYear || new Date().getFullYear() + 30
         },
         pensionResults: {
-          expectedPension: pensionData.monthlyPension,
-          realPension: pensionData.realPension,
-          replacementRate: pensionData.replacementRate,
-          totalContributions: pensionData.totalContributions,
-          valorizedContributions: pensionData.valorizedContributions,
-          sicknessImpact: pensionData.sicknessImpact
+          monthlyPension: pensionData.monthlyPension || 0,
+          replacementRate: pensionData.replacementRate || 0,
+          yearsToRetirement: Math.max(0, (personData.retirementYear || new Date().getFullYear() + 30) - new Date().getFullYear()),
+          totalContributions: pensionData.totalContributions || 0,
+          realPensionValue: pensionData.realPension || pensionData.monthlyPension || 0,
+          projectedInflation: 2.5, // Domyślna wartość inflacji
+          initialCapital: (personData.accountBalance || 0) + (personData.subAccountBalance || 0),
+          valorizedContributions: pensionData.valorizedContributions || pensionData.totalContributions || 0,
+          lifeExpectancy: personData.gender === 'Kobieta' ? 82 : 76 // Średnia długość życia w Polsce
+        },
+        fus20Params: {
+          scenario: 'intermediate',
+          unemploymentRate: 5.2,
+          realWageGrowth: 3.5,
+          contributionCollection: 92
         },
         postalCode: postalCode,
-        generatedAt: new Date().toISOString()
+        generatedAt: new Date()
       };
 
       // Symulacja generowania PDF
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Utworzenie i pobranie pliku
-      const blob = new Blob([JSON.stringify(reportData, null, 2)], { 
-        type: 'application/json' 
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `raport-emerytalny-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Generowanie rzeczywistego PDF za pomocą funkcji z reportGenerator
+      generateUserPDFReport(reportData);
 
       // Zapisanie danych do localStorage dla administratora
-      saveUsageData(reportData);
+      saveUsageData({
+        personalInfo: reportData.personalInfo,
+        pensionResults: reportData.pensionResults,
+        postalCode: postalCode,
+        generatedAt: new Date().toISOString()
+      });
       
     } catch (error) {
-      console.error('Błąd podczas generowania raportu:', error);
+      console.error('Błąd podczas generowania raportu PDF:', error);
+      alert('Wystąpił błąd podczas generowania raportu PDF. Spróbuj ponownie.');
     } finally {
       setIsGeneratingReport(false);
     }
@@ -138,6 +152,109 @@ export const ReportingSystem: React.FC<ReportingSystemProps> = ({
           </p>
         </div>
 
+        {/* Porównanie regionalne */}
+        {districtData && (
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+            <div className="flex items-center gap-2 mb-3">
+              <MapPin className="h-4 w-4 text-green-600" />
+              <h4 className="font-medium text-green-900">Porównanie regionalne</h4>
+            </div>
+            <div className="mb-3">
+              <p className="text-sm text-green-700 font-medium">
+                {districtData.districtName}, woj. {districtData.voivodeship}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Średnia emerytura w regionie:</span>
+                  <span className="font-medium text-gray-900">
+                    {districtData.averagePension.toLocaleString('pl-PL')} zł
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Twoja prognoza:</span>
+                  <span className="font-medium text-gray-900">
+                    {pensionData?.monthlyPension?.toLocaleString('pl-PL') || 0} zł
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Różnica:</span>
+                  <div className="flex items-center gap-1">
+                    {(() => {
+                      const diff = (pensionData?.monthlyPension || 0) - districtData.averagePension;
+                      const percentage = Math.abs((diff / districtData.averagePension) * 100);
+                      
+                      if (diff > 0) {
+                        return (
+                          <>
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <span className="font-medium text-green-600">
+                              +{diff.toLocaleString('pl-PL')} zł ({percentage.toFixed(1)}%)
+                            </span>
+                          </>
+                        );
+                      } else if (diff < 0) {
+                        return (
+                          <>
+                            <TrendingDown className="h-4 w-4 text-red-600" />
+                            <span className="font-medium text-red-600">
+                              {diff.toLocaleString('pl-PL')} zł ({percentage.toFixed(1)}%)
+                            </span>
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <Minus className="h-4 w-4 text-gray-600" />
+                            <span className="font-medium text-gray-600">Identyczna</span>
+                          </>
+                        );
+                      }
+                    })()}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Średnie wynagrodzenie:</span>
+                  <span className="font-medium text-gray-900">
+                    {districtData.averageSalary.toLocaleString('pl-PL')} zł
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Stopa bezrobocia:</span>
+                  <span className="font-medium text-gray-900">
+                    {districtData.unemploymentRate}%
+                  </span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Średni wiek emerytalny:</span>
+                  <span className="font-medium text-gray-900">
+                    {personData?.gender === 'Kobieta' 
+                      ? `${districtData.retirementAge.female} lat`
+                      : `${districtData.retirementAge.male} lat`
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-3 p-3 bg-white rounded border">
+              <p className="text-xs text-gray-500">
+                Dane regionalne pochodzą z oficjalnych statystyk ZUS i GUS za 2024 rok. 
+                Porównanie ma charakter orientacyjny i może się różnić od rzeczywistych wartości.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Pobieranie raportu */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-3">
@@ -146,6 +263,9 @@ export const ReportingSystem: React.FC<ReportingSystemProps> = ({
           </div>
           <p className="text-sm text-gray-600 mb-4">
             Raport zawiera szczegółowe wyniki prognozy, wykresy, tabele oraz wprowadzone parametry początkowe
+            {districtData && (
+              <span className="text-green-600 font-medium"> i porównanie z regionem {districtData.districtName}</span>
+            )}
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

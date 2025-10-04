@@ -339,7 +339,6 @@ export function calculatePension(
     }
     
     // Jeśli brak danych historycznych dla tego roku, użyj obecnego wynagrodzenia z prognozą wzrostu
-    const yearsFromStart = year - personData.workStartYear;
     const currentYear = new Date().getFullYear();
     const wageGrowthRate = fus20Params.wageGrowth / 100; // Domyślnie 3.5%
     

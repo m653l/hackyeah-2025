@@ -8,8 +8,7 @@ import {
   AlertTriangle, 
   Info,
   Download,
-  MapPin,
-  Users
+  MapPin
 } from 'lucide-react';
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -37,7 +36,6 @@ import {
   type UserReportData 
 } from '../utils/reportGenerator';
 import { ProfessionalContext } from '../components/ProfessionalContext';
-import { AdvancedDashboard } from '../components/AdvancedDashboard';
 import { ReportingSystem } from '../components/ReportingSystem';
 
 ChartJS.register(
@@ -77,7 +75,7 @@ const ResultsPage: React.FC = () => {
     );
   }
 
-  const { pensionResult, personData, fus20Params, formData } = state;
+  const { pensionResult, personData, fus20Params } = state;
 
   // Analiza opóźnienia emerytury
   const delayAnalysis = calculateRetirementDelay(personData, 2, fus20Params);
@@ -110,8 +108,8 @@ const ResultsPage: React.FC = () => {
         scenario: fus20Params.scenario === 'intermediate' ? 'Pośredni' : 
                  fus20Params.scenario === 'pessimistic' ? 'Pesymistyczny' : 'Optymistyczny',
         unemploymentRate: fus20Params.unemploymentRate,
-        realWageGrowth: fus20Params.wageGrowthRate,
-        contributionCollection: fus20Params.contributionCollectionRate
+        realWageGrowth: fus20Params.wageGrowth,
+        contributionCollection: fus20Params.contributionCollection
       },
       delayAnalysis: {
         originalPension: delayAnalysis.originalPension,

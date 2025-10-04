@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Users, FileText, Database, Settings, Download, Upload, AlertTriangle } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
-import { generateAdminXLSReport, generateSampleAdminData, type AdminReportEntry } from '../utils/reportGenerator';
+import { generateAdminXLSReport, generateSampleAdminData } from '../utils/reportGenerator';
 import { AdminReporting } from '../components/ReportingSystem';
 
 const AdminPage: React.FC = () => {

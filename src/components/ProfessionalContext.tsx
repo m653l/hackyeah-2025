@@ -1,7 +1,6 @@
 import React from 'react';
 import { Info, TrendingUp, Users } from 'lucide-react';
 import { professionalGroups, comparePensionWithGroup } from '../data/professionalGroups';
-import type { ProfessionalGroup } from '../data/professionalGroups';
 
 interface ProfessionalContextProps {
   selectedGroupId?: string;
@@ -20,9 +19,7 @@ export const ProfessionalContext: React.FC<ProfessionalContextProps> = ({
     ? professionalGroups.find(g => g.id === selectedGroupId)
     : undefined;
 
-  const comparison = userPension && selectedGroupId 
-    ? comparePensionWithGroup(userPension, selectedGroupId)
-    : null;
+
 
   return (
     <div className={`w-full bg-white rounded-lg shadow p-6 ${className}`}>

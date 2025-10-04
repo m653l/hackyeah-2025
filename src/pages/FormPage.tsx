@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calculator, User, Calendar, DollarSign, Users } from 'lucide-react';
+import { Calculator, User, Calendar, DollarSign } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { calculatePension, type FUS20Parameters, type PersonData, type HistoricalSalary, type SicknessPeriod } from '../utils/actuarialCalculations';
 import { ProfessionalContext } from '../components/ProfessionalContext';
@@ -71,6 +71,37 @@ const FormPage: React.FC = () => {
     historicalSalaries: [],
     sicknessPeriods: []
   });
+
+  // Funkcja do odczytywania danych z localStorage
+  const getSavedFormData = (): Partial<FormData> => {
+    try {
+      const savedData = localStorage.getItem('pensionFormData');
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+    } catch (error) {
+      console.error('Błąd podczas odczytywania danych z localStorage:', error);
+    }
+    return {};
+  };
+
+  // Funkcja do zapisywania danych do localStorage
+  const saveFormData = (data: FormData) => {
+    try {
+      localStorage.setItem('pensionFormData', JSON.stringify(data));
+    } catch (error) {
+      console.error('Błąd podczas zapisywania danych do localStorage:', error);
+    }
+  };
+
+  // Funkcja do czyszczenia zapisanych danych
+  const clearSavedData = () => {
+    try {
+      localStorage.removeItem('pensionFormData');
+    } catch (error) {
+      console.error('Błąd podczas usuwania danych z localStorage:', error);
+    }
+  };
   
   const {
     register,
@@ -78,6 +109,7 @@ const FormPage: React.FC = () => {
     formState: { errors, isSubmitting },
     watch,
     setValue,
+    reset,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -90,6 +122,19 @@ const FormPage: React.FC = () => {
       contributionPeriod: 0,
     },
   });
+
+  // useEffect do automatycznego wypełniania formularza zapisanymi danymi
+  useEffect(() => {
+    const savedData = getSavedFormData();
+    if (Object.keys(savedData).length > 0) {
+      // Wypełnij formularz zapisanymi danymi
+      Object.entries(savedData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          setValue(key as keyof FormData, value);
+        }
+      });
+    }
+  }, [setValue]);
 
   const age = watch('age');
   // const workStartYear = watch('workStartYear');
@@ -112,6 +157,9 @@ const FormPage: React.FC = () => {
   const onSubmit = (data: FormData) => {
     console.log('Dane formularza:', data);
     console.log('Parametry z dashboard:', dashboardParameters);
+    
+    // Zapisz dane formularza do localStorage przed przejściem do wyników
+    saveFormData(data);
     
     try {
       // Przygotowanie danych dla kalkulacji aktuarialnej z parametrami z dashboard
@@ -170,6 +218,22 @@ const FormPage: React.FC = () => {
     } catch (error) {
       console.error('Błąd podczas obliczania emerytury:', error);
       alert('Wystąpił błąd podczas obliczania prognozy emerytury. Spróbuj ponownie.');
+    }
+  };
+
+  // Funkcja do czyszczenia formularza
+  const handleClearForm = () => {
+    if (confirm('Czy na pewno chcesz wyczyścić wszystkie dane formularza?')) {
+      clearSavedData();
+      reset({
+        age: 30,
+        gender: 'male',
+        salary: 5000,
+        workStartYear: 2020,
+        retirementYear: 2067,
+        currentSavings: 0,
+        contributionPeriod: 0,
+      });
     }
   };
 
@@ -381,13 +445,22 @@ const FormPage: React.FC = () => {
             />
 
             {/* Submit Button */}
-            <div className="flex justify-center space-x-4">
-              <Link
-                to="/"
-                className="px-6 py-3 border border-zus-gray-300 rounded-md text-zus-navy hover:bg-zus-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-zus-gray-500 focus:ring-offset-2"
-              >
-                Anuluj
-              </Link>
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-4">
+                <Link
+                  to="/"
+                  className="px-6 py-3 border border-zus-gray-300 rounded-md text-zus-navy hover:bg-zus-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-zus-gray-500 focus:ring-offset-2"
+                >
+                  Anuluj
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleClearForm}
+                  className="px-6 py-3 border border-zus-red text-zus-red rounded-md hover:bg-zus-red hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-zus-red focus:ring-offset-2"
+                >
+                  Wyczyść formularz
+                </button>
+              </div>
               <button
                 type="submit"
                 disabled={isSubmitting}

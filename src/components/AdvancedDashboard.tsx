@@ -129,7 +129,7 @@ const HistoricalDataPanel: React.FC<{
   };
 
   const removeHistoricalSalary = (index: number) => {
-    const updated = historicalSalaries.filter((_, i) => i !== index);
+    const updated = historicalSalaries.filter((_: any, i: number) => i !== index);
     setHistoricalSalaries(updated);
     onParameterChange('historicalSalaries', updated);
   };
@@ -307,7 +307,7 @@ const SicknessPeriodsPanel: React.FC<{
   };
 
   const removeSicknessPeriod = (index: number) => {
-    const updated = sicknessPeriods.filter((_, i) => i !== index);
+    const updated = sicknessPeriods.filter((_: any, i: number) => i !== index);
     setSicknessPeriods(updated);
     onParameterChange('sicknessPeriods', updated);
   };

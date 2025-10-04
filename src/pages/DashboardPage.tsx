@@ -13,6 +13,7 @@ import {
   DollarSign,
   AlertTriangle
 } from 'lucide-react';
+import AnimatedNumber from '../components/AnimatedNumber';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -60,18 +61,64 @@ interface FUS20Scenario {
 
 const DashboardPage: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<'intermediate' | 'pessimistic' | 'optimistic'>('intermediate');
-  const [selectedCounty, setSelectedCounty] = useState<string>('mazowieckie');
-  const [showAccountProjection, setShowAccountProjection] = useState<boolean>(false);
+  const [selectedCounty, setSelectedCounty] = useState('');
+  const [showAccountProjection, setShowAccountProjection] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [chartsVisible, setChartsVisible] = useState(true);
   const [customParams, setCustomParams] = useState<FUS20Parameters>({
     scenario: 'intermediate',
     unemploymentRate: 5.2,
     wageGrowth: 3.5,
     inflation: 2.5,
-    contributionCollection: 95.0,
+    contributionCollection: 92,
   });
 
   // Dane dla wybranego powiatu
   const selectedCountySickLeave = COUNTY_SICK_LEAVE_DATA.find(county => county.name === selectedCounty);
+  
+  // Funkcja do przeliczania prognoz
+  const handleRecalculateForecasts = async () => {
+    setIsRecalculating(true);
+    
+    try {
+      // Animacja fade-out wykresów
+      setChartsVisible(false);
+      
+      // Symulacja przeliczania - w rzeczywistej aplikacji tutaj byłyby wywołania do API
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Aktualizacja scenariusza na podstawie customParams
+      const newScenario = determineScenarioFromParams(customParams);
+      setSelectedScenario(newScenario);
+      
+      // Tutaj można dodać dodatkowe logiki przeliczania
+      console.log('Prognozy przeliczone z parametrami:', customParams);
+      
+      // Animacja fade-in wykresów
+      setTimeout(() => {
+        setChartsVisible(true);
+      }, 100);
+      
+    } catch (error) {
+      console.error('Błąd podczas przeliczania prognoz:', error);
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+
+  // Funkcja pomocnicza do określenia scenariusza na podstawie parametrów
+  const determineScenarioFromParams = (params: FUS20Parameters): 'intermediate' | 'pessimistic' | 'optimistic' => {
+    const { unemploymentRate, wageGrowth, inflation } = params;
+    
+    // Logika określania scenariusza na podstawie parametrów
+    if (unemploymentRate > 6.5 || wageGrowth < 2.5 || inflation > 3.0) {
+      return 'pessimistic';
+    } else if (unemploymentRate < 4.0 && wageGrowth > 4.0 && inflation < 2.2) {
+      return 'optimistic';
+    } else {
+      return 'intermediate';
+    }
+  };
   
   // Sample account projection for demonstration
   const accountProjectionData = calculateAccountBalanceProjection({
@@ -127,20 +174,38 @@ const DashboardPage: React.FC = () => {
     },
   ];
 
+  // Funkcja do generowania danych demograficznych na podstawie parametrów
+  const generateDemographicData = () => {
+    const baseWorkingAge = [22.4, 21.8, 20.1, 18.9, 17.8, 16.9, 15.8];
+    const baseRetirees = [9.2, 10.1, 12.3, 13.2, 13.8, 13.9, 13.7];
+    
+    // Modyfikacja populacji w wieku produkcyjnym na podstawie stopy bezrobocia
+    // (wyższa stopa bezrobocia może oznaczać mniejszą aktywność zawodową)
+    const unemploymentFactor = 1 - (customParams.unemploymentRate - 5.2) * 0.02;
+    
+    return {
+      workingAge: baseWorkingAge.map(val => Math.max(val * unemploymentFactor, 10)),
+      // Populacja emerytów pozostaje stała - to dane demograficzne niezależne od parametrów ekonomicznych
+      retirees: baseRetirees
+    };
+  };
+
+  const demographicData = generateDemographicData();
+  
   // Dane demograficzne do wykresu
   const demographicChartData = {
     labels: ['2025', '2030', '2040', '2050', '2060', '2070', '2080'],
     datasets: [
       {
         label: 'Populacja w wieku produkcyjnym (mln)',
-        data: [22.4, 21.8, 20.1, 18.9, 17.8, 16.9, 15.8],
+        data: demographicData.workingAge,
         borderColor: 'rgb(0, 153, 63)',
         backgroundColor: 'rgba(0, 153, 63, 0.2)',
         tension: 0.1,
       },
       {
         label: 'Populacja emerytów (mln)',
-        data: [9.2, 10.1, 12.3, 13.2, 13.8, 13.9, 13.7],
+        data: demographicData.retirees,
         borderColor: 'rgb(255, 179, 79)',
         backgroundColor: 'rgba(255, 179, 79, 0.2)',
         tension: 0.1,
@@ -170,15 +235,36 @@ const DashboardPage: React.FC = () => {
     },
   };
 
-  // Dane bilansu FUS do wykresu
+  // Funkcja do generowania danych salda funduszu na podstawie parametrów
+  const generateFundBalanceData = () => {
+    const baseOptimistic = [120, 150, 180, 200, 210, 220, 230];
+    const basePessimistic = [80, 60, 40, 20, -10, -30, -50];
+    const baseIntermediate = [100, 105, 110, 115, 120, 125, 130];
+    
+    // Modyfikacja na podstawie ściągalności składek i inflacji
+    const collectionFactor = customParams.contributionCollection / 92;
+    const inflationFactor = 1 - (customParams.inflation - 2.5) * 0.1;
+    
+    let baseData = selectedScenario === 'optimistic' ? baseOptimistic :
+                   selectedScenario === 'pessimistic' ? basePessimistic :
+                   baseIntermediate;
+    
+    return baseData.map(val => val * collectionFactor * inflationFactor);
+  };
+
+  // Dane salda funduszu
   const fundBalanceData = {
-    labels: ['2025', '2030', '2035', '2040', '2045', '2050'],
+    labels: ['2025', '2030', '2040', '2050', '2060', '2070', '2080'],
     datasets: [
       {
-        label: 'Bilans FUS (mld zł)',
-        data: [-15.2, -25.7, -38.4, -52.1, -67.3, -84.2],
-        backgroundColor: 'rgba(220, 38, 127, 0.8)',
-        borderColor: 'rgb(220, 38, 127)',
+        label: 'Saldo funduszu (mld zł)',
+        data: generateFundBalanceData(),
+        backgroundColor: selectedScenario === 'optimistic' ? 'rgba(0, 153, 63, 0.8)' :
+                        selectedScenario === 'pessimistic' ? 'rgba(255, 99, 132, 0.8)' :
+                        'rgba(63, 132, 210, 0.8)',
+        borderColor: selectedScenario === 'optimistic' ? 'rgb(0, 153, 63)' :
+                    selectedScenario === 'pessimistic' ? 'rgb(255, 99, 132)' :
+                    'rgb(63, 132, 210)',
         borderWidth: 1,
       },
     ],
@@ -192,7 +278,7 @@ const DashboardPage: React.FC = () => {
       },
       title: {
         display: true,
-        text: 'Prognoza salda Funduszu Ubezpieczeń Społecznych',
+        text: 'Prognoza salda funduszu emerytalnego',
       },
     },
     scales: {
@@ -210,15 +296,30 @@ const DashboardPage: React.FC = () => {
     },
   };
 
+  // Funkcja do generowania danych stopy zastąpienia na podstawie parametrów
+  const generateReplacementRateData = () => {
+    const baseOptimistic = [52, 48, 45, 42, 40, 38, 36];
+    const basePessimistic = [48, 42, 38, 34, 30, 28, 25];
+    const baseIntermediate = [50, 45, 41, 38, 35, 32, 30];
+    
+    // Modyfikacja na podstawie wzrostu płac i ściągalności składek
+    const wageGrowthFactor = 1 + (customParams.wageGrowth - 3.5) * 0.02;
+    const collectionFactor = customParams.contributionCollection / 92;
+    
+    let baseData = selectedScenario === 'optimistic' ? baseOptimistic :
+                   selectedScenario === 'pessimistic' ? basePessimistic :
+                   baseIntermediate;
+    
+    return baseData.map(val => Math.min(val * wageGrowthFactor * collectionFactor, 60));
+  };
+
   // Dane stopy zastąpienia
   const replacementRateData = {
     labels: ['2025', '2030', '2040', '2050', '2060', '2070', '2080'],
     datasets: [
       {
         label: 'Stopa zastąpienia (%)',
-        data: selectedScenario === 'optimistic' ? [52, 48, 45, 42, 40, 38, 36] :
-              selectedScenario === 'pessimistic' ? [48, 42, 38, 34, 30, 28, 25] :
-              [50, 45, 41, 38, 35, 32, 30],
+        data: generateReplacementRateData(),
         borderColor: 'rgb(63, 132, 210)',
         backgroundColor: 'rgba(63, 132, 210, 0.2)',
         tension: 0.1,
@@ -389,9 +490,17 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 flex gap-4">
-            <button className="bg-zus-orange text-white px-4 py-2 rounded-md hover:bg-zus-orange/90 transition-colors focus:outline-none focus:ring-2 focus:ring-zus-orange focus:ring-offset-2 flex items-center">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Przelicz prognozy
+            <button 
+              onClick={handleRecalculateForecasts}
+              disabled={isRecalculating}
+              className={`px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-zus-orange focus:ring-offset-2 flex items-center ${
+                isRecalculating 
+                  ? 'bg-zus-gray-400 text-white cursor-not-allowed' 
+                  : 'bg-zus-orange text-white hover:bg-zus-orange/90'
+              }`}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
+              {isRecalculating ? 'Przeliczanie...' : 'Przelicz prognozy'}
             </button>
             <button className="bg-white text-zus-navy px-4 py-2 rounded-md border border-zus-navy hover:bg-zus-navy hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-zus-navy focus:ring-offset-2 flex items-center">
               <Download className="h-4 w-4 mr-2" />
@@ -402,17 +511,35 @@ const DashboardPage: React.FC = () => {
 
         {/* Charts Grid */}
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <Line data={demographicChartData} options={demographicOptions} />
+          <div className={`bg-white rounded-lg shadow-lg p-6 transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
+            {isRecalculating ? (
+              <div className="h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                <div className="text-gray-500">Przeliczanie danych...</div>
+              </div>
+            ) : (
+              <Line data={demographicChartData} options={demographicOptions} />
+            )}
           </div>
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <Bar data={fundBalanceData} options={fundBalanceOptions} />
+          <div className={`bg-white rounded-lg shadow-lg p-6 transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
+            {isRecalculating ? (
+              <div className="h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                <div className="text-gray-500">Przeliczanie danych...</div>
+              </div>
+            ) : (
+              <Bar data={fundBalanceData} options={fundBalanceOptions} />
+            )}
           </div>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <Line data={replacementRateData} options={replacementRateOptions} />
+          <div className={`bg-white rounded-lg shadow-lg p-6 transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
+            {isRecalculating ? (
+              <div className="h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                <div className="text-gray-500">Przeliczanie danych...</div>
+              </div>
+            ) : (
+              <Line data={replacementRateData} options={replacementRateOptions} />
+            )}
           </div>
           
           {/* Key Indicators */}
@@ -424,29 +551,53 @@ const DashboardPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Współczynnik obciążenia demograficznego</span>
-                  <span className="font-semibold text-zus-navy">0.55</span>
+                  <AnimatedNumber 
+                    value={0.55 * (1 + (customParams.unemploymentRate - 5.2) * 0.01)} 
+                    formatFunction={(val) => val.toFixed(2)}
+                    className="font-semibold text-zus-navy"
+                  />
                 </div>
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Średni wiek przejścia na emeryturę</span>
-                  <span className="font-semibold text-zus-navy">62.3 lat</span>
+                  <AnimatedNumber 
+                    value={62.3 + (customParams.wageGrowth - 3.5) * 0.2} 
+                    formatFunction={(val) => `${val.toFixed(1)} lat`}
+                    className="font-semibold text-zus-navy"
+                  />
                 </div>
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Przeciętne dalsze trwanie życia</span>
-                  <span className="font-semibold text-zus-navy">19.2 lat</span>
+                  <AnimatedNumber 
+                    value={19.2 - (customParams.inflation - 2.5) * 0.1} 
+                    formatFunction={(val) => `${val.toFixed(1)} lat`}
+                    className="font-semibold text-zus-navy"
+                  />
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Stopa waloryzacji składek (2024)</span>
-                  <span className="font-semibold text-zus-navy">15.26%</span>
+                  <AnimatedNumber 
+                    value={15.26 + (customParams.wageGrowth - 3.5) * 2} 
+                    formatFunction={(val) => `${val.toFixed(2)}%`}
+                    className="font-semibold text-zus-navy"
+                  />
                 </div>
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Średnia emerytura (2024)</span>
-                  <span className="font-semibold text-zus-navy">2,847 zł</span>
+                  <AnimatedNumber 
+                    value={2847 * (1 + (customParams.wageGrowth - 3.5) * 0.05)} 
+                    formatFunction={(val) => `${Math.round(val).toLocaleString('pl-PL')} zł`}
+                    className="font-semibold text-zus-navy"
+                  />
                 </div>
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Deficyt FUS (% PKB)</span>
-                  <span className="font-semibold text-zus-red">-1.2%</span>
+                  <AnimatedNumber 
+                    value={-1.2 - (customParams.contributionCollection - 92) * 0.02} 
+                    formatFunction={(val) => `${val.toFixed(1)}%`}
+                    className="font-semibold text-zus-red"
+                  />
                 </div>
               </div>
             </div>

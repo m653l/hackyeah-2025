@@ -49,33 +49,80 @@ const HomePage: React.FC = () => {
       const amount = parseFloat(expectedPension);
       if (!isNaN(amount)) {
         const result = contextualizePension(amount);
-        setContextualization(typeof result === 'string' ? result : JSON.stringify(result));
+        // Formatuj wynik w czytelny sposób
+        if (typeof result === 'object' && result !== null) {
+          const formattedText = `Twoja oczekiwana emerytura jest ${result.comparison}. ` +
+            `Znajdujesz się w ${result.percentile}. percentylu emerytów w Polsce. ` +
+            `Różnica względem średniej krajowej: ${result.differenceFromAverage > 0 ? '+' : ''}${result.differenceFromAverage.toFixed(0)} zł ` +
+            `(${result.percentageOfAverage.toFixed(0)}% średniej krajowej).`;
+          setContextualization(formattedText);
+        } else {
+          setContextualization(typeof result === 'string' ? result : '');
+        }
       }
     } else {
       setContextualization('');
     }
   }, [expectedPension]);
 
+  // Przygotuj dane wykresu z opcjonalnym słupkiem użytkownika
+  const getChartData = () => {
+    const baseLabels = PENSION_GROUPS.map(group => group.name);
+    const baseData = PENSION_GROUPS.map(group => group.averageAmount);
+    const baseBackgroundColors = [
+      'rgba(220, 38, 127, 0.8)',   // zus-pink
+      'rgba(255, 102, 0, 0.8)',    // zus-orange
+      'rgba(0, 150, 136, 0.8)',    // zus-green
+      'rgba(33, 150, 243, 0.8)',   // zus-blue
+      'rgba(13, 71, 161, 0.8)',    // zus-navy
+    ];
+    const baseBorderColors = [
+      'rgba(220, 38, 127, 1)',
+      'rgba(255, 102, 0, 1)',
+      'rgba(0, 150, 136, 1)',
+      'rgba(33, 150, 243, 1)',
+      'rgba(13, 71, 161, 1)',
+    ];
+
+    // Jeśli użytkownik wprowadził kwotę emerytury, dodaj jego słupek
+    if (expectedPension && !isNaN(parseFloat(expectedPension))) {
+      const userAmount = parseFloat(expectedPension);
+      
+      // Znajdź odpowiednie miejsce dla słupka użytkownika (sortuj według wysokości)
+      let insertIndex = baseData.findIndex(amount => userAmount <= amount);
+      if (insertIndex === -1) insertIndex = baseData.length;
+
+      const labels = [...baseLabels];
+      const data = [...baseData];
+      const backgroundColors = [...baseBackgroundColors];
+      const borderColors = [...baseBorderColors];
+
+      // Wstaw dane użytkownika w odpowiednim miejscu
+      labels.splice(insertIndex, 0, 'Twoja emerytura');
+      data.splice(insertIndex, 0, userAmount);
+      backgroundColors.splice(insertIndex, 0, 'rgba(255, 215, 0, 0.9)'); // Złoty kolor
+      borderColors.splice(insertIndex, 0, 'rgba(255, 215, 0, 1)');
+
+      return { labels, data, backgroundColors, borderColors };
+    }
+
+    return { 
+      labels: baseLabels, 
+      data: baseData, 
+      backgroundColors: baseBackgroundColors, 
+      borderColors: baseBorderColors 
+    };
+  };
+
+  const chartDataConfig = getChartData();
   const chartData = {
-    labels: PENSION_GROUPS.map(group => group.name),
+    labels: chartDataConfig.labels,
     datasets: [
       {
         label: 'Średnia wysokość emerytury (zł)',
-        data: PENSION_GROUPS.map(group => group.averageAmount),
-        backgroundColor: [
-          'rgba(220, 38, 127, 0.8)',   // zus-pink
-          'rgba(255, 102, 0, 0.8)',    // zus-orange
-          'rgba(0, 150, 136, 0.8)',    // zus-green
-          'rgba(33, 150, 243, 0.8)',   // zus-blue
-          'rgba(13, 71, 161, 0.8)',    // zus-navy
-        ],
-        borderColor: [
-          'rgba(220, 38, 127, 1)',
-          'rgba(255, 102, 0, 1)',
-          'rgba(0, 150, 136, 1)',
-          'rgba(33, 150, 243, 1)',
-          'rgba(13, 71, 161, 1)',
-        ],
+        data: chartDataConfig.data,
+        backgroundColor: chartDataConfig.backgroundColors,
+        borderColor: chartDataConfig.borderColors,
         borderWidth: 2,
         borderRadius: 8,
         borderSkipped: false,
@@ -111,17 +158,35 @@ const HomePage: React.FC = () => {
         displayColors: false,
         callbacks: {
           title: function(context: any) {
-            const groupIndex = context[0].dataIndex;
-            return PENSION_GROUPS[groupIndex].name;
+            const dataIndex = context[0].dataIndex;
+            const label = chartDataConfig.labels[dataIndex];
+            return label;
           },
           label: function(context: any) {
-            const groupIndex = context.dataIndex;
-            const group = PENSION_GROUPS[groupIndex];
-            return [
-              `Średnia: ${group.averageAmount.toLocaleString('pl-PL')} zł`,
-              `Opis: ${group.description}`,
-              `Charakterystyka: ${group.characteristics}`
-            ];
+            const dataIndex = context.dataIndex;
+            const label = chartDataConfig.labels[dataIndex];
+            const value = chartDataConfig.data[dataIndex];
+            
+            // Jeśli to słupek użytkownika
+            if (label === 'Twoja emerytura') {
+              return [
+                `Twoja emerytura: ${value.toLocaleString('pl-PL')} zł`,
+                `To Twoja wprowadzona kwota emerytury`
+              ];
+            }
+            
+            // Dla standardowych grup emerytalnych
+            const groupIndex = PENSION_GROUPS.findIndex(group => group.name === label);
+            if (groupIndex !== -1) {
+              const group = PENSION_GROUPS[groupIndex];
+              return [
+                `Średnia: ${group.averageAmount.toLocaleString('pl-PL')} zł`,
+                `Opis: ${group.description}`,
+                `Charakterystyka: ${group.characteristics}`
+              ];
+            }
+            
+            return [`Wartość: ${value.toLocaleString('pl-PL')} zł`];
           }
         }
       }
