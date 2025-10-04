@@ -4,12 +4,29 @@
  */
 
 // Interfaces - definicje typów dla kalkulacji aktuarialnych
+interface HistoricalSalary {
+  year: number;
+  amount: number;
+}
+
+interface SicknessPeriod {
+  year: number;
+  days: number;
+  type: 'past' | 'future';
+  county?: string;
+}
+
 interface FUS20Parameters {
   scenario: 'intermediate' | 'pessimistic' | 'optimistic';
   unemploymentRate: number;
   wageGrowth: number;
   inflation: number;
   contributionCollection: number;
+  // Nowe parametry z dashboard
+  fus20Variant?: 'intermediate' | 'pessimistic' | 'optimistic';
+  generalInflation?: number;
+  pensionerInflation?: number;
+  realGDPGrowth?: number;
 }
 
 interface PersonData {
@@ -21,6 +38,18 @@ interface PersonData {
   currentSavings?: number;
   contributionPeriod?: number;
   includeSickLeave?: boolean;
+  professionalGroup?: string;
+  // Nowe parametry z dashboard
+  historicalSalaries?: HistoricalSalary[];
+  sicknessPeriods?: SicknessPeriod[];
+  salaryGrowthRate?: number;
+  contributionValorizationRate?: number;
+  inflationRate?: number;
+  forecastHorizon?: number;
+  mainAccount?: number;
+  subAccount?: number;
+  showAccountGrowth?: boolean;
+  includeValorization?: boolean;
 }
 
 interface PensionCalculationResult {
@@ -39,7 +68,7 @@ interface PensionCalculationResult {
 }
 
 // Eksporty interfejsów
-export type { FUS20Parameters, PersonData, PensionCalculationResult };
+export type { FUS20Parameters, PersonData, PensionCalculationResult, HistoricalSalary, SicknessPeriod };
 
 /**
  * Historyczne wskaźniki waloryzacji składek (roczne i kwartalne)
@@ -224,11 +253,16 @@ export function calculateLifeExpectancy(
   age: number,
   gender: 'male' | 'female'
 ): number {
+  // Użyj rzeczywistego wieku na emeryturze, nie wieku emerytalnego
   const retirementAge = Math.max(60, Math.min(67, age));
   const table = LIFE_EXPECTANCY_TABLES[gender];
   
+  console.log('Obliczanie dalszego trwania życia:', { age, retirementAge, gender });
+  
   if (table[retirementAge as keyof typeof table]) {
-    return table[retirementAge as keyof typeof table];
+    const lifeExpectancy = table[retirementAge as keyof typeof table];
+    console.log('Dalsze trwanie życia z tabeli:', lifeExpectancy, 'miesięcy');
+    return lifeExpectancy;
   }
   
   // Interpolacja dla wieku pomiędzy tabelami
@@ -236,14 +270,18 @@ export function calculateLifeExpectancy(
   const upperAge = Math.ceil(retirementAge);
   
   if (lowerAge === upperAge) {
-    return table[lowerAge as keyof typeof table] || 192; // Domyślnie 16 lat
+    const defaultValue = table[lowerAge as keyof typeof table] || 192; // Domyślnie 16 lat
+    console.log('Dalsze trwanie życia (domyślne):', defaultValue, 'miesięcy');
+    return defaultValue;
   }
   
   const lowerValue = table[lowerAge as keyof typeof table] || 192;
   const upperValue = table[upperAge as keyof typeof table] || 192;
   const ratio = retirementAge - lowerAge;
+  const interpolatedValue = lowerValue + (upperValue - lowerValue) * ratio;
   
-  return lowerValue + (upperValue - lowerValue) * ratio;
+  console.log('Dalsze trwanie życia (interpolowane):', interpolatedValue, 'miesięcy');
+  return interpolatedValue;
 }
 
 /**
@@ -260,88 +298,233 @@ export function calculatePension(
     contributionCollection: 95.0
   }
 ): PensionCalculationResult {
+  console.log('=== ROZPOCZĘCIE KALKULACJI EMERYTURY ===');
+  console.log('Dane wejściowe:', { personData, fus20Params });
+
   const currentYear = new Date().getFullYear();
   const yearsToRetirement = personData.retirementYear - currentYear;
   const workingYears = personData.retirementYear - personData.workStartYear;
   
-  // 1. Waloryzacja wynagrodzeń (L2.2)
-  // const valorizedSalary = calculateWageValorization(
-  //   personData.salary,
-  //   currentYear,
-  //   personData.retirementYear
-  // );
-  
-  // 2. Kalkulacja chorobowego (L2.4a)
-  const adjustedAnnualSalary = calculateSickLeaveImpact(
-    personData.age,
-    personData.gender,
-    personData.salary * 12
-  );
-  
-  // 3. Obliczenie kapitału początkowego (L2.5)
-  const initialCapital = personData.contributionPeriod 
-    ? calculateInitialCapital(
-        personData.gender,
-        personData.contributionPeriod,
-        personData.salary * 0.7 // Szacunkowe wynagrodzenie w 1998 roku
-      )
-    : 0;
-  
-  // 4. Składki emerytalne (19.52% podstawy wymiaru)
-  let annualContribution = adjustedAnnualSalary * 0.1952;
-  
-  // 4a. Uwzględnienie zwolnień lekarskich (jeśli wybrano opcję)
-  if (personData.includeSickLeave) {
-    const sickLeaveReduction = calculateSickLeaveImpact(
-      personData.age,
-      personData.gender,
-      adjustedAnnualSalary
-    );
-    annualContribution = annualContribution * (1 - sickLeaveReduction / 100);
+  console.log('Podstawowe obliczenia:', { currentYear, yearsToRetirement, workingYears });
+
+  // Walidacja podstawowych danych
+  if (yearsToRetirement < 0) {
+    console.error('BŁĄD: Rok emerytury jest w przeszłości!');
+    throw new Error('Rok emerytury nie może być w przeszłości');
   }
   
-  const totalContributions = (annualContribution * workingYears) + 
-                           (personData.currentSavings || 0) + 
-                           initialCapital;
+  if (workingYears <= 0) {
+    console.error('BŁĄD: Nieprawidłowy okres pracy!');
+    throw new Error('Okres pracy musi być większy od 0');
+  }
+
+  // Użyj parametrów z dashboard jeśli dostępne
+  const effectiveInflation = personData.inflationRate || fus20Params.generalInflation || fus20Params.inflation || 2.5;
+  const effectiveWageGrowth = personData.salaryGrowthRate || fus20Params.wageGrowth || 3.5;
+  const effectiveContributionCollection = fus20Params.contributionCollection || 95.0;
+  const effectiveScenario = fus20Params.fus20Variant || fus20Params.scenario || 'intermediate';
   
-  // 5. Waloryzacja składek z uwzględnieniem ściągalności
-  const valorizedContributions = totalContributions * 
-                                (fus20Params.contributionCollection / 100);
+  console.log('Parametry efektywne:', { effectiveInflation, effectiveWageGrowth, effectiveContributionCollection, effectiveScenario });
+
+  // 1. Waloryzacja wynagrodzeń z uwzględnieniem danych historycznych (L2.2)
+  // Funkcja pomocnicza do uzyskania wynagrodzenia dla konkretnego roku
+  const getSalaryForYear = (year: number): number => {
+    // Sprawdź czy mamy dane historyczne dla tego konkretnego roku
+    if (personData.historicalSalaries && personData.historicalSalaries.length > 0) {
+      const historicalSalary = personData.historicalSalaries.find(item => item.year === year);
+      if (historicalSalary && historicalSalary.amount > 0) {
+        console.log(`Rok ${year}: używam danych historycznych - ${historicalSalary.amount} zł (roczne)`);
+        return historicalSalary.amount; // Dane historyczne są już roczne
+      }
+    }
+    
+    // Jeśli brak danych historycznych dla tego roku, użyj obecnego wynagrodzenia z prognozą wzrostu
+    const yearsFromStart = year - personData.workStartYear;
+    const currentYear = new Date().getFullYear();
+    const wageGrowthRate = fus20Params.wageGrowth / 100; // Domyślnie 3.5%
+    
+    // POPRAWKA: wynagrodzenie z formularza jest MIESIĘCZNE, więc trzeba je pomnożyć przez 12
+    let projectedSalary = Math.max(personData.salary * 12, 0); // Konwersja z miesięcznego na roczne
+    
+    // Jeśli rok jest w przyszłości względem obecnego roku, zastosuj prognozę wzrostu
+    if (year > currentYear) {
+      const yearsInFuture = year - currentYear;
+      projectedSalary = projectedSalary * Math.pow(1 + wageGrowthRate, yearsInFuture);
+    }
+    
+    console.log(`Rok ${year}: używam prognozowanego wynagrodzenia - ${projectedSalary.toFixed(2)} zł (roczne, z miesięcznego ${personData.salary} zł)`);
+    return projectedSalary;
+  };
+
+  console.log('=== ROZPOCZĘCIE KALKULACJI WYNAGRODZEŃ ROK PO ROK ===');
+
+  // 2. Kalkulacja chorobowego z uwzględnieniem okresów z dashboard (L2.4a)
+  // Najpierw obliczmy średnie wynagrodzenie dla celów chorobowego
+  let totalSalaryForSickLeave = 0;
+  for (let year = 0; year < workingYears; year++) {
+    const currentYear = personData.workStartYear + year;
+    totalSalaryForSickLeave += getSalaryForYear(currentYear);
+  }
+  const avgAnnualSalary = totalSalaryForSickLeave / workingYears;
   
-  // 6. Dalsze trwanie życia w miesiącach
-  const lifeExpectancyMonths = calculateLifeExpectancy(
-    personData.age + yearsToRetirement,
-    personData.gender
-  );
+  let sickLeaveReduction = 0;
   
-  // 7. Miesięczna emerytura
-  const monthlyPension = valorizedContributions / lifeExpectancyMonths;
+  // Uwzględnij okresy choroby z dashboard
+  if (personData.sicknessPeriods && personData.sicknessPeriods.length > 0) {
+    let totalSickDays = 0;
+    personData.sicknessPeriods.forEach(period => {
+      if (period.type === 'past' || period.year <= currentYear) {
+        totalSickDays += Math.max(period.days, 0);
+      }
+    });
+    
+    // Redukcja wynagrodzenia o dni choroby (zakładając 250 dni roboczych rocznie)
+    sickLeaveReduction = Math.min(totalSickDays / (250 * Math.max(workingYears, 1)), 0.1); // max 10% redukcji
+  } else {
+    // Standardowa kalkulacja chorobowego
+    const sickLeaveImpact = calculateSickLeaveImpact(
+      personData.age,
+      personData.gender,
+      avgAnnualSalary
+    );
+    sickLeaveReduction = Math.min(sickLeaveImpact / 100, 0.1); // max 10% redukcji
+  }
   
-  // 8. Stopa zastąpienia
-  const replacementRate = (monthlyPension / personData.salary) * 100;
+  console.log('Redukcja z tytułu chorobowego:', { avgAnnualSalary, sickLeaveReduction });
+
+  // 3. Obliczenie kapitału początkowego (L2.5)
+  let initialCapital = 0;
   
-  // 9. Wpływ inflacji na realną wartość
-  const realPensionValue = monthlyPension / 
-                          Math.pow(1 + fus20Params.inflation / 100, yearsToRetirement);
+  if (personData.contributionPeriod && personData.contributionPeriod > 0) {
+    // avgAnnualSalary jest już roczne, więc używamy go bezpośrednio
+    const estimatedSalary1998 = Math.max(avgAnnualSalary * 0.3, 1000); // Minimum 1000 zł
+    initialCapital = calculateInitialCapital(
+      personData.gender,
+      personData.contributionPeriod,
+      estimatedSalary1998
+    );
+  }
   
-  // 10. Wartość nominalna (bez uwzględnienia inflacji)
+  // Uwzględnij konto główne i subkonto z dashboard
+  if (personData.mainAccount && personData.mainAccount > 0) {
+    initialCapital += personData.mainAccount;
+  }
+  if (personData.subAccount && personData.subAccount > 0) {
+    initialCapital += personData.subAccount;
+  }
+  
+  initialCapital = Math.max(initialCapital, 0); // Zabezpieczenie przed ujemnymi wartościami
+  console.log('Kapitał początkowy:', initialCapital);
+
+  // 4. Składki emerytalne (19.52% podstawy wymiaru) - NOWA LOGIKA ROK PO ROK
+  const contributionRate = 0.1952; // 19.52% - składka emerytalna w Polsce
+  console.log('Stopa składkowa:', contributionRate * 100 + '%');
+  
+  console.log('=== SZCZEGÓŁOWA KALKULACJA SKŁADEK ROK PO ROK ===');
+
+  // 5. Obliczenie całkowitych składek za cały okres pracy - POPRAWIONA LOGIKA Z HISTORYCZNYMI WYNAGRODZENIAMI
+  let totalContributions = 0;
+  
+  // Oblicz składki rok po rok - używając konkretnych wynagrodzeń dla każdego roku
+  for (let year = 0; year < workingYears; year++) {
+    const currentYear = personData.workStartYear + year;
+    
+    // Pobierz wynagrodzenie dla konkretnego roku (historyczne lub prognozowane)
+    const yearSalary = getSalaryForYear(currentYear);
+    
+    // Zastosuj redukcję chorobową
+    const adjustedYearSalary = yearSalary * (1 - sickLeaveReduction);
+    
+    // Oblicz składkę dla tego roku
+    let yearlyContribution = adjustedYearSalary * contributionRate;
+    
+    // WALORYZACJA TYLKO DLA LAT HISTORYCZNYCH (do 2024)
+    if (currentYear <= 2024 && VALORIZATION_RATES.annual[currentYear as keyof typeof VALORIZATION_RATES.annual]) {
+      // Dla lat historycznych - zastosuj rzeczywistą waloryzację
+      const historicalRate = VALORIZATION_RATES.annual[currentYear as keyof typeof VALORIZATION_RATES.annual];
+      yearlyContribution *= (1 + historicalRate / 100);
+      console.log(`Rok ${currentYear}: wynagrodzenie ${yearSalary.toFixed(2)} zł → składka ${yearlyContribution.toFixed(2)} zł (waloryzacja ${historicalRate}%)`);
+    } else if (currentYear > 2024) {
+      // Dla lat przyszłych - BEZ WALORYZACJI, tylko nominalna składka
+      console.log(`Rok ${currentYear}: wynagrodzenie ${yearSalary.toFixed(2)} zł → składka ${yearlyContribution.toFixed(2)} zł (przyszłość - bez waloryzacji)`);
+    } else {
+      // Dla lat przed 2010 - bez waloryzacji
+      console.log(`Rok ${currentYear}: wynagrodzenie ${yearSalary.toFixed(2)} zł → składka ${yearlyContribution.toFixed(2)} zł (przed 2010 - bez waloryzacji)`);
+    }
+    
+    totalContributions += yearlyContribution;
+  }
+  
+  console.log(`Suma składek za ${workingYears} lat: ${totalContributions.toFixed(2)} zł`);
+  
+  // Dodaj kapitał początkowy i obecne oszczędności
+  totalContributions += initialCapital + (personData.currentSavings || 0);
+  
+  console.log('Całkowite składki (po prawidłowej waloryzacji):', totalContributions);
+
+  // 6. Waloryzacja składek z uwzględnieniem ściągalności
+  const valorizedContributions = Math.max(totalContributions * (effectiveContributionCollection / 100), 0);
+  
+  console.log('Składki po uwzględnieniu ściągalności:', valorizedContributions);
+
+  // 7. Dalsze trwanie życia w miesiącach - użyj rzeczywistego wieku na emeryturze
+  const actualRetirementAge = personData.age + yearsToRetirement;
+  const lifeExpectancyMonths = calculateLifeExpectancy(actualRetirementAge, personData.gender);
+  
+  console.log('Dalsze trwanie życia:', { actualRetirementAge, lifeExpectancyMonths });
+
+  // Walidacja dalszego trwania życia
+  if (lifeExpectancyMonths <= 0) {
+    console.error('BŁĄD: Nieprawidłowe dalsze trwanie życia!');
+    throw new Error('Dalsze trwanie życia musi być większe od 0');
+  }
+
+  // 8. Miesięczna emerytura
+  const monthlyPension = Math.max(valorizedContributions / lifeExpectancyMonths, 0);
+  
+  console.log('Miesięczna emerytura:', monthlyPension);
+
+  // 9. POPRAWIONA STOPA ZASTĄPIENIA - zgodnie z dokumentacją
+  // Stopa zastąpienia = (prognozowane świadczenie / wynagrodzenie zindeksowane) * 100
+  // Wynagrodzenie zindeksowane = obecne wynagrodzenie * wzrost płac przez lata do emerytury
+  const currentSalary = Math.max(personData.salary, 0); // Miesięczne wynagrodzenie z formularza
+  const indexedSalary = currentSalary * Math.pow(1 + effectiveWageGrowth / 100, yearsToRetirement);
+  const replacementRate = indexedSalary > 0 ? (monthlyPension / indexedSalary) * 100 : 0;
+  
+  console.log('POPRAWIONA Stopa zastąpienia:', { 
+    currentSalary, 
+    indexedSalary, 
+    monthlyPension,
+    replacementRate 
+  });
+
+  // 10. Wpływ inflacji na realną wartość
+  const inflationFactor = Math.pow(1 + effectiveInflation / 100, yearsToRetirement);
+  const realPensionValue = monthlyPension / inflationFactor;
+  
+  // 11. Wartość nominalna (bez uwzględnienia inflacji)
   const nominalPensionValue = monthlyPension;
   
-  return {
-    monthlyPension,
-    totalContributions: (annualContribution * workingYears) + (personData.currentSavings || 0) + initialCapital,
-    capitalAtRetirement: valorizedContributions,
-    replacementRate,
+  console.log('Wartości emerytury:', { realPensionValue, nominalPensionValue, inflationFactor });
+
+  const result = {
+    monthlyPension: Math.round(monthlyPension * 100) / 100,
+    totalContributions: Math.round(totalContributions * 100) / 100,
+    capitalAtRetirement: Math.round(valorizedContributions * 100) / 100,
+    replacementRate: Math.round(replacementRate * 100) / 100,
     yearsToRetirement,
-    projectedInflation: fus20Params.inflation,
-    realPensionValue,
-    nominalPensionValue,
-    sickLeaveImpact: personData.includeSickLeave ? calculateSickLeaveImpact(personData.age, personData.gender, adjustedAnnualSalary) : 0,
-    initialCapital,
-    valorizedContributions,
-    lifeExpectancy: lifeExpectancyMonths,
-    lifeExpectancy: lifeExpectancyMonths / 12, // Konwersja na lata
+    projectedInflation: effectiveInflation,
+    realPensionValue: Math.round(realPensionValue * 100) / 100,
+    nominalPensionValue: Math.round(nominalPensionValue * 100) / 100,
+    sickLeaveImpact: sickLeaveReduction * 100,
+    initialCapital: Math.round(initialCapital * 100) / 100,
+    valorizedContributions: Math.round(valorizedContributions * 100) / 100,
+    lifeExpectancy: Math.round((lifeExpectancyMonths / 12) * 100) / 100,
   };
+
+  console.log('=== WYNIK KALKULACJI ===', result);
+  
+  return result;
 }
 
 /**

@@ -46,128 +46,147 @@ graph TD
 
 ## 2. Technology Description
 
-- **Frontend**: React@18 + TypeScript + TailwindCSS@3 + Vite + Chart.js + jsPDF
-- **Backend**: Supabase (Authentication, Database, Storage)
-- **Data Processing**: Custom JavaScript modules for actuarial calculations
-- **Accessibility**: React-aria components for WCAG 2.0 compliance
-- **State Management**: React Context API + useReducer
-- **Form Handling**: React Hook Form with Zod validation
-- **Report Generation**: jsPDF for user reports, SheetJS for admin XLS exports
+* **Frontend**: React\@18 + TypeScript + TailwindCSS\@3 + Vite + Chart.js + jsPDF
+
+* **Backend**: Supabase (Authentication, Database, Storage)
+
+* **Data Processing**: Custom JavaScript modules for actuarial calculations
+
+* **Accessibility**: React-aria components for WCAG 2.0 compliance
+
+* **State Management**: React Context API + useReducer
+
+* **Form Handling**: React Hook Form with Zod validation
+
+* **Report Generation**: jsPDF for user reports, SheetJS for admin XLS exports
 
 ## 3. Route definitions
 
-| Route | Purpose |
-|-------|---------|
-| / | Pulpit Podstawowy (1.1) - wprowadzenie oczekiwanej emerytury, wizualizacja grup, ciekawostki |
-| /formularz | Symulacja Emerytury (1.2) - formularz z walidacją, oszacowanie środków, kalkulacja CP, opcja zwolnień |
-| /wyniki | Prezentacja prognozy emerytury z analizami i kontekstem, pobieranie raportu PDF, kod pocztowy |
-| /dashboard | Dashboard zaawansowany z kontrolą założeń aktuarialnych i wariantów FUS20 |
-| /admin | Panel administracyjny dla użytkowników ZUS z raportami XLS |
-| /admin/login | Logowanie administratora ZUS |
-| /admin/reports | Generowanie i pobieranie raportów administracyjnych XLS |
+| Route          | Purpose                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| /              | Pulpit Podstawowy (1.1) - wprowadzenie oczekiwanej emerytury, wizualizacja grup, ciekawostki          |
+| /formularz     | Symulacja Emerytury (1.2) - formularz z walidacją, oszacowanie środków, kalkulacja CP, opcja zwolnień |
+| /wyniki        | Prezentacja prognozy emerytury z analizami i kontekstem, pobieranie raportu PDF, kod pocztowy         |
+| /dashboard     | Dashboard zaawansowany z kontrolą założeń aktuarialnych i wariantów FUS20                             |
+| /admin         | Panel administracyjny dla użytkowników ZUS z raportami XLS                                            |
+| /admin/login   | Logowanie administratora ZUS                                                                          |
+| /admin/reports | Generowanie i pobieranie raportów administracyjnych XLS                                               |
 
 ## 4. API definitions
 
 ### 4.1 Core API
 
 **Kalkulacja emerytury**
+
 ```
 POST /api/calculate-pension
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| age | number | true | Wiek użytkownika |
-| gender | string | true | Płeć (M/F) |
-| salary | number | true | Wysokość wynagrodzenia brutto |
-| workStartYear | number | true | Rok rozpoczęcia pracy |
-| workEndYear | number | true | Planowany rok zakończenia pracy |
-| currentSavings | number | false | Zgromadzone środki na koncie ZUS |
-| workExperience1998 | number | false | Staż składkowy/nieskładkowy na 31.12.1998 |
-| includeSickness | boolean | false | Uwzględnienie zwolnień lekarskich |
-| expectedPension | number | false | Oczekiwana wysokość emerytury |
-| fusVariant | number | true | Wariant FUS20 (1, 2, 3) |
-| postalCode | string | false | Kod pocztowy dla celów statystycznych |
+
+| Param Name         | Param Type | isRequired | Description                               |
+| ------------------ | ---------- | ---------- | ----------------------------------------- |
+| age                | number     | true       | Wiek użytkownika                          |
+| gender             | string     | true       | Płeć (M/F)                                |
+| salary             | number     | true       | Wysokość wynagrodzenia brutto             |
+| workStartYear      | number     | true       | Rok rozpoczęcia pracy                     |
+| workEndYear        | number     | true       | Planowany rok zakończenia pracy           |
+| currentSavings     | number     | false      | Zgromadzone środki na koncie ZUS          |
+| workExperience1998 | number     | false      | Staż składkowy/nieskładkowy na 31.12.1998 |
+| includeSickness    | boolean    | false      | Uwzględnienie zwolnień lekarskich         |
+| expectedPension    | number     | false      | Oczekiwana wysokość emerytury             |
+| fusVariant         | number     | true       | Wariant FUS20 (1, 2, 3)                   |
+| postalCode         | string     | false      | Kod pocztowy dla celów statystycznych     |
 
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| pensionAmount | number | Prognozowana wysokość emerytury |
-| pensionAmountReal | number | Emerytura rzeczywista (zdyskontowana inflacją) |
-| replacementRate | number | Stopa zastąpienia |
-| withSickness | number | Emerytura z uwzględnieniem chorobowego |
-| withoutSickness | number | Emerytura bez uwzględnienia chorobowego |
-| delayBenefits | object | Korzyści z odroczenia emerytury (1, 2, 5 lat) |
-| initialCapital | number | Obliczony kapitał początkowy |
-| estimatedSavings | number | Oszacowane środki ZUS (jeśli nie podano) |
-| sicknessImpact | object | Wpływ zwolnień na świadczenie |
-| countyContext | object | Kontekst powiatowy (najwyższa, najniższa, przeciętna emerytura) |
-| professionalContext | object | Kontekst zawodowy (przeciętne emerytury dla kodów tytułu ubezpieczenia) |
-| totalContributions | number | Łączne składki |
+
+| Param Name          | Param Type | Description                                                             |
+| ------------------- | ---------- | ----------------------------------------------------------------------- |
+| pensionAmount       | number     | Prognozowana wysokość emerytury                                         |
+| pensionAmountReal   | number     | Emerytura rzeczywista (zdyskontowana inflacją)                          |
+| replacementRate     | number     | Stopa zastąpienia                                                       |
+| withSickness        | number     | Emerytura z uwzględnieniem chorobowego                                  |
+| withoutSickness     | number     | Emerytura bez uwzględnienia chorobowego                                 |
+| delayBenefits       | object     | Korzyści z odroczenia emerytury (1, 2, 5 lat)                           |
+| initialCapital      | number     | Obliczony kapitał początkowy                                            |
+| estimatedSavings    | number     | Oszacowane środki ZUS (jeśli nie podano)                                |
+| sicknessImpact      | object     | Wpływ zwolnień na świadczenie                                           |
+| countyContext       | object     | Kontekst powiatowy (najwyższa, najniższa, przeciętna emerytura)         |
+| professionalContext | object     | Kontekst zawodowy (przeciętne emerytury dla kodów tytułu ubezpieczenia) |
+| totalContributions  | number     | Łączne składki                                                          |
 
 **Pobieranie danych referencyjnych**
+
 ```
 GET /api/reference-data
 ```
 
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| valorization | array | Historyczne wskaźniki waloryzacji (roczne i kwartalne) |
-| lifeExpectancy | array | Tablice dalszego trwania życia (w miesiącach) |
-| fusParameters | object | Parametry FUS20 dla wszystkich wariantów (2023-2080) |
-| sicknessData | object | Średnia długość absencji chorobowej wg wieku i płci |
-| countyData | object | Statystyki emerytalne wg powiatów |
+
+| Param Name     | Param Type | Description                                            |
+| -------------- | ---------- | ------------------------------------------------------ |
+| valorization   | array      | Historyczne wskaźniki waloryzacji (roczne i kwartalne) |
+| lifeExpectancy | array      | Tablice dalszego trwania życia (w miesiącach)          |
+| fusParameters  | object     | Parametry FUS20 dla wszystkich wariantów (2023-2080)   |
+| sicknessData   | object     | Średnia długość absencji chorobowej wg wieku i płci    |
+| countyData     | object     | Statystyki emerytalne wg powiatów                      |
 
 **Generowanie raportu użytkownika**
+
 ```
 POST /api/generate-user-report
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| calculationId | string | true | ID kalkulacji |
-| includeCharts | boolean | true | Czy dołączyć wykresy |
-| postalCode | string | false | Kod pocztowy |
+
+| Param Name    | Param Type | isRequired | Description          |
+| ------------- | ---------- | ---------- | -------------------- |
+| calculationId | string     | true       | ID kalkulacji        |
+| includeCharts | boolean    | true       | Czy dołączyć wykresy |
+| postalCode    | string     | false      | Kod pocztowy         |
 
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| reportUrl | string | URL do pobrania raportu PDF |
-| reportId | string | ID wygenerowanego raportu |
+
+| Param Name | Param Type | Description                 |
+| ---------- | ---------- | --------------------------- |
+| reportUrl  | string     | URL do pobrania raportu PDF |
+| reportId   | string     | ID wygenerowanego raportu   |
 
 **Raportowanie administracyjne**
+
 ```
 POST /api/admin/usage-report
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| dateFrom | string | true | Data początkowa raportu |
-| dateTo | string | true | Data końcowa raportu |
-| format | string | true | Format raportu (XLS) |
+
+| Param Name | Param Type | isRequired | Description             |
+| ---------- | ---------- | ---------- | ----------------------- |
+| dateFrom   | string     | true       | Data początkowa raportu |
+| dateTo     | string     | true       | Data końcowa raportu    |
+| format     | string     | true       | Format raportu (XLS)    |
 
 Response:
-| Param Name | Param Type | Description |
-|------------|------------|-------------|
-| reportUrl | string | URL do pobrania raportu XLS |
-| recordCount | number | Liczba rekordów w raporcie |
+
+| Param Name  | Param Type | Description                 |
+| ----------- | ---------- | --------------------------- |
+| reportUrl   | string     | URL do pobrania raportu XLS |
+| recordCount | number     | Liczba rekordów w raporcie  |
 
 **Logowanie użycia**
+
 ```
 POST /api/log-usage
 ```
 
 Request:
-| Param Name | Param Type | isRequired | Description |
-|------------|------------|------------|-------------|
-| calculationData | object | true | Dane kalkulacji |
-| results | object | true | Wyniki kalkulacji |
-| postalCode | string | false | Kod pocztowy |
-| timestamp | string | true | Czas użycia |
+
+| Param Name      | Param Type | isRequired | Description       |
+| --------------- | ---------- | ---------- | ----------------- |
+| calculationData | object     | true       | Dane kalkulacji   |
+| results         | object     | true       | Wyniki kalkulacji |
+| postalCode      | string     | false      | Kod pocztowy      |
+| timestamp       | string     | true       | Czas użycia       |
 
 ## 5. Server architecture diagram
 
@@ -329,6 +348,7 @@ erDiagram
 ### 6.2 Data Definition Language
 
 **Tabela użytkowników (users)**
+
 ```sql
 -- create table
 CREATE TABLE users (
@@ -344,6 +364,7 @@ CREATE INDEX idx_users_last_active ON users(last_active DESC);
 ```
 
 **Tabela kalkulacji (calculations)**
+
 ```sql
 -- create table
 CREATE TABLE calculations (
@@ -369,7 +390,8 @@ CREATE INDEX idx_calculations_created_at ON calculations(created_at DESC);
 CREATE INDEX idx_calculations_postal_code ON calculations(postal_code);
 ```
 
-**Tabela wyników kalkulacji (calculation_results)**
+**Tabela wyników kalkulacji (calculation\_results)**
+
 ```sql
 -- create table
 CREATE TABLE calculation_results (
@@ -392,7 +414,8 @@ CREATE INDEX idx_calculation_results_calculation_id ON calculation_results(calcu
 CREATE INDEX idx_calculation_results_pension_amount ON calculation_results(pension_amount DESC);
 ```
 
-**Tabela logów użycia (usage_logs)**
+**Tabela logów użycia (usage\_logs)**
+
 ```sql
 -- create table
 CREATE TABLE usage_logs (
@@ -411,7 +434,8 @@ CREATE INDEX idx_usage_logs_postal_code ON usage_logs(postal_code);
 CREATE INDEX idx_usage_logs_calculation_id ON usage_logs(calculation_id);
 ```
 
-**Tabela administratorów (admin_users)**
+**Tabela administratorów (admin\_users)**
+
 ```sql
 -- create table
 CREATE TABLE admin_users (
@@ -428,7 +452,8 @@ CREATE INDEX idx_admin_users_email ON admin_users(email);
 CREATE INDEX idx_admin_users_last_login ON admin_users(last_login DESC);
 ```
 
-**Tabela raportów użytkowników (user_reports)**
+**Tabela raportów użytkowników (user\_reports)**
+
 ```sql
 -- create table
 CREATE TABLE user_reports (
@@ -446,6 +471,7 @@ CREATE INDEX idx_user_reports_expires_at ON user_reports(expires_at);
 ```
 
 **Uprawnienia Supabase**
+
 ```sql
 -- Grant basic access to anon role
 GRANT SELECT ON users TO anon;

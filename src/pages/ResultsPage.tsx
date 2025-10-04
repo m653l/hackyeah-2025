@@ -8,7 +8,8 @@ import {
   AlertTriangle, 
   Info,
   Download,
-  MapPin
+  MapPin,
+  Users
 } from 'lucide-react';
 import { Line, Bar } from 'react-chartjs-2';
 import {
@@ -35,6 +36,9 @@ import {
   generateUserPDFReport, 
   type UserReportData 
 } from '../utils/reportGenerator';
+import { ProfessionalContext } from '../components/ProfessionalContext';
+import { AdvancedDashboard } from '../components/AdvancedDashboard';
+import { ReportingSystem } from '../components/ReportingSystem';
 
 ChartJS.register(
   CategoryScale,
@@ -127,19 +131,65 @@ const ResultsPage: React.FC = () => {
     return postalCodeRegex.test(code);
   };
 
-  // Dane do wykresów
+  // Funkcja pomocnicza do uzyskania wynagrodzenia dla konkretnego roku (zgodna z actuarialCalculations.ts)
+  const getSalaryForYear = (year: number): number => {
+    // Sprawdź czy mamy dane historyczne dla tego konkretnego roku
+    if (personData.historicalSalaries && personData.historicalSalaries.length > 0) {
+      const historicalSalary = personData.historicalSalaries.find(item => item.year === year);
+      if (historicalSalary && historicalSalary.amount > 0) {
+        return historicalSalary.amount; // Dane historyczne są już roczne
+      }
+    }
+    
+    // Jeśli brak danych historycznych dla tego roku, użyj obecnego wynagrodzenia z prognozą wzrostu
+    const currentYear = new Date().getFullYear();
+    const wageGrowthRate = (fus20Params.wageGrowth || 3.5) / 100;
+    
+    // Wynagrodzenie z formularza jest MIESIĘCZNE, więc trzeba je pomnożyć przez 12
+    let projectedSalary = Math.max(personData.salary * 12, 0);
+    
+    // Jeśli rok jest w przyszłości względem obecnego roku, zastosuj prognozę wzrostu
+    if (year > currentYear) {
+      const yearsInFuture = year - currentYear;
+      projectedSalary = projectedSalary * Math.pow(1 + wageGrowthRate, yearsInFuture);
+    }
+    
+    return projectedSalary;
+  };
+
+  // Dane do wykresów - uwzględniające dane historyczne z Dashboard zaawansowany
   const contributionProjectionData = {
     labels: Array.from({ length: pensionResult.yearsToRetirement }, (_, i) => 
       new Date().getFullYear() + i + 1
     ),
     datasets: [
       {
-        label: 'Składki emerytalne (zł)',
-        data: Array.from({ length: pensionResult.yearsToRetirement }, (_, i) => 
-          (personData.salary * 12 * 0.1952) * (i + 1)
-        ),
+        label: 'Roczne składki emerytalne (zł)',
+        data: Array.from({ length: pensionResult.yearsToRetirement }, (_, i) => {
+          const year = new Date().getFullYear() + i + 1;
+          const yearSalary = getSalaryForYear(year);
+          // Składka emerytalna (19.52% z wynagrodzenia brutto)
+          const annualContribution = yearSalary * 0.1952;
+          return annualContribution;
+        }),
         borderColor: 'rgb(255, 179, 79)',
         backgroundColor: 'rgba(255, 179, 79, 0.2)',
+        tension: 0.1,
+      },
+      {
+        label: 'Skumulowane składki (zł)',
+        data: Array.from({ length: pensionResult.yearsToRetirement }, (_, i) => {
+          let cumulativeContributions = 0;
+          for (let j = 0; j <= i; j++) {
+            const year = new Date().getFullYear() + j + 1;
+            const yearSalary = getSalaryForYear(year);
+            const annualContribution = yearSalary * 0.1952;
+            cumulativeContributions += annualContribution;
+          }
+          return cumulativeContributions;
+        }),
+        borderColor: 'rgb(0, 153, 63)',
+        backgroundColor: 'rgba(0, 153, 63, 0.1)',
         tension: 0.1,
       },
     ],
@@ -311,7 +361,10 @@ const ResultsPage: React.FC = () => {
             <div className="flex items-center">
               <DollarSign className="h-8 w-8 text-zus-navy" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Łączne składki</p>
+                <p className="text-sm font-medium text-gray-600" title="Suma wszystkich składek emerytalnych wpłaconych w trakcie kariery zawodowej">
+                  Łączne składki
+                </p>
+                <p className="text-xs text-gray-500 mb-1">Suma wszystkich wpłaconych składek</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {new Intl.NumberFormat('pl-PL', {
                     style: 'currency',
@@ -405,6 +458,25 @@ const ResultsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Professional Context */}
+        {personData.professionalGroup && (
+          <div className="mb-8">
+            <ProfessionalContext
+              selectedGroupId={personData.professionalGroup}
+              onGroupSelect={() => {}} // Read-only in results
+              userPension={pensionResult.monthlyPension}
+            />
+          </div>
+        )}
+
+        {/* Reporting System */}
+        <div className="mb-8">
+          <ReportingSystem
+            pensionData={pensionResult}
+            personData={personData}
+          />
+        </div>
+
         {/* Szczegółowa analiza */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="bg-white rounded-lg shadow p-6">
@@ -447,29 +519,92 @@ const ResultsPage: React.FC = () => {
                   }).format(pensionResult.initialCapital)}
                 </span>
               </div>
+              
+              {/* Dodatkowe wyjaśnienia różnic między składkami */}
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-semibold text-blue-800 mb-2">Rodzaje składek emerytalnych</h4>
+                <div className="space-y-2 text-sm text-blue-700">
+                  <div className="flex justify-between">
+                    <span>• Łączne składki (brutto):</span>
+                    <span className="font-medium">
+                      {new Intl.NumberFormat('pl-PL', {
+                        style: 'currency',
+                        currency: 'PLN',
+                        minimumFractionDigits: 0,
+                      }).format(pensionResult.totalContributions)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>• Po waloryzacji i ściągalności:</span>
+                    <span className="font-medium">
+                      {new Intl.NumberFormat('pl-PL', {
+                        style: 'currency',
+                        currency: 'PLN',
+                        minimumFractionDigits: 0,
+                      }).format(pensionResult.valorizedContributions)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-2">
+                    Różnica wynika z waloryzacji historycznych składek oraz uwzględnienia ściągalności składek ({((pensionResult.valorizedContributions / pensionResult.totalContributions) * 100).toFixed(1)}% z łącznych składek).
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
               <AlertTriangle className="h-5 w-5 mr-2 text-zus-orange" />
-              Rekomendacje i analiza opóźnienia
+              Analiza opóźnienia emerytury
             </h3>
             <div className="space-y-4">
-              <div className="p-4 bg-zus-orange bg-opacity-10 rounded-lg">
-                <h4 className="font-semibold text-zus-orange mb-2">Opóźnienie emerytury o 2 lata</h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  Zwiększenie miesięcznej emerytury o{' '}
-                  <span className="font-semibold">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-800 mb-2">Opóźnienie o 1 rok</h4>
+                  <p className="text-sm text-green-700 mb-1">
+                    Wzrost: +{((calculateRetirementDelay(personData, 1, fus20Params).delayedPension / pensionResult.monthlyPension - 1) * 100).toFixed(1)}%
+                  </p>
+                  <p className="text-lg font-bold text-green-800">
                     {new Intl.NumberFormat('pl-PL', {
                       style: 'currency',
                       currency: 'PLN',
                       minimumFractionDigits: 0,
-                    }).format(delayAnalysis.delayedPension - delayAnalysis.originalPension)}
-                  </span>
-                  {' '}({delayAnalysis.increasePercentage.toFixed(1)}%)
-                </p>
-                <p className="text-xs text-gray-600">
+                    }).format(calculateRetirementDelay(personData, 1, fus20Params).delayedPension)}
+                  </p>
+                </div>
+                
+                <div className="p-4 bg-zus-orange bg-opacity-10 rounded-lg border border-zus-orange">
+                  <h4 className="font-semibold text-zus-orange mb-2">Opóźnienie o 2 lata</h4>
+                  <p className="text-sm text-orange-700 mb-1">
+                    Wzrost: +{delayAnalysis.increasePercentage.toFixed(1)}%
+                  </p>
+                  <p className="text-lg font-bold text-zus-orange">
+                    {new Intl.NumberFormat('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN',
+                      minimumFractionDigits: 0,
+                    }).format(delayAnalysis.delayedPension)}
+                  </p>
+                </div>
+
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-800 mb-2">Opóźnienie o 5 lat</h4>
+                  <p className="text-sm text-blue-700 mb-1">
+                    Wzrost: +{((calculateRetirementDelay(personData, 5, fus20Params).delayedPension / pensionResult.monthlyPension - 1) * 100).toFixed(1)}%
+                  </p>
+                  <p className="text-lg font-bold text-blue-800">
+                    {new Intl.NumberFormat('pl-PL', {
+                      style: 'currency',
+                      currency: 'PLN',
+                      minimumFractionDigits: 0,
+                    }).format(calculateRetirementDelay(personData, 5, fus20Params).delayedPension)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-semibold text-gray-700 mb-2">Statystyki opóźnień w Polsce</h4>
+                <p className="text-sm text-gray-600">
                   {delayStats.national.delay2YearsPlus.toFixed(1)}% Polaków opóźnia emeryturę o 2 lata lub więcej
                 </p>
               </div>
@@ -478,11 +613,16 @@ const ResultsPage: React.FC = () => {
                 <h4 className="font-semibold text-gray-700 mb-2">Dodatkowe informacje</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
                   <li>• Przewidywana długość życia: {pensionResult.lifeExpectancy.toFixed(1)} lat</li>
-                  <li>• Waloryzowane składki: {new Intl.NumberFormat('pl-PL', {
+                  <li title="Składki po uwzględnieniu waloryzacji historycznych składek oraz współczynnika ściągalności">
+                    • Składki po waloryzacji i ściągalności: {new Intl.NumberFormat('pl-PL', {
                     style: 'currency',
                     currency: 'PLN',
                     minimumFractionDigits: 0,
-                  }).format(pensionResult.valorizedContributions)}</li>
+                  }).format(pensionResult.valorizedContributions)}
+                  </li>
+                  {pensionResult.sickLeaveImpact > 0 && (
+                    <li>• Wpływ zwolnień lekarskich: -{pensionResult.sickLeaveImpact.toFixed(1)}% składek</li>
+                  )}
                   <li>• Scenariusz FUS20: {fus20Params.scenario === 'intermediate' ? 'Pośredni' : 
                     fus20Params.scenario === 'pessimistic' ? 'Pesymistyczny' : 'Optymistyczny'}</li>
                 </ul>

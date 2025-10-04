@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calculator, User, Calendar, DollarSign } from 'lucide-react';
+import { Calculator, User, Calendar, DollarSign, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { calculatePension, type FUS20Parameters, type PersonData } from '../utils/actuarialCalculations';
+import { calculatePension, type FUS20Parameters, type PersonData, type HistoricalSalary, type SicknessPeriod } from '../utils/actuarialCalculations';
+import { ProfessionalContext } from '../components/ProfessionalContext';
+import { AdvancedDashboard } from '../components/AdvancedDashboard';
 
 const formSchema = z.object({
   age: z.number().min(18, 'Wiek musi być większy niż 18 lat').max(67, 'Wiek nie może przekraczać 67 lat'),
@@ -15,17 +17,67 @@ const formSchema = z.object({
   currentSavings: z.number().min(0, 'Zgromadzone środki nie mogą być ujemne').optional(),
   contributionPeriod: z.number().min(0, 'Staż składkowy nie może być ujemny').max(50, 'Staż składkowy nie może przekraczać 50 lat').optional(),
   includeSickLeave: z.boolean().optional(),
+  professionalGroup: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 const FormPage: React.FC = () => {
   const navigate = useNavigate();
+  const [selectedProfessionalGroup, setSelectedProfessionalGroup] = useState<string | undefined>();
+  
+  // State do przechowywania parametrów z Dashboard Zaawansowany
+  const [dashboardParameters, setDashboardParameters] = useState<{
+    // Dane historyczne
+    historicalSalaries?: HistoricalSalary[];
+    // Prognozy przyszłe
+    salaryGrowthRate?: number;
+    contributionValorizationRate?: number;
+    inflationRate?: number;
+    forecastHorizon?: number;
+    // Okresy choroby
+    sicknessPeriods?: SicknessPeriod[];
+    // Konto ZUS
+    mainAccount?: number;
+    subAccount?: number;
+    showAccountGrowth?: boolean;
+    includeValorization?: boolean;
+    // Warianty FUS20
+    fus20Variant?: 'intermediate' | 'pessimistic' | 'optimistic';
+    // Parametry makroekonomiczne
+    unemploymentRate?: number;
+    realWageGrowth?: number;
+    generalInflation?: number;
+    pensionerInflation?: number;
+    realGDPGrowth?: number;
+    contributionCollection?: number;
+  }>({
+    // Wartości domyślne
+    salaryGrowthRate: 3.5,
+    contributionValorizationRate: 4.2,
+    inflationRate: 2.5,
+    forecastHorizon: 10,
+    mainAccount: 0,
+    subAccount: 0,
+    showAccountGrowth: false,
+    includeValorization: true,
+    fus20Variant: 'intermediate',
+    unemploymentRate: 5.2,
+    realWageGrowth: 3.5,
+    generalInflation: 2.5,
+    pensionerInflation: 2.5,
+    realGDPGrowth: 2.8,
+    contributionCollection: 95.0,
+    historicalSalaries: [],
+    sicknessPeriods: []
+  });
+  
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
+    setValue,
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -49,11 +101,20 @@ const FormPage: React.FC = () => {
     return currentYear + (retirementAge - currentAge);
   };
 
+  // Funkcja obsługująca zmiany parametrów z Dashboard
+  const handleParameterChange = (parameter: string, value: any) => {
+    setDashboardParameters(prev => ({
+      ...prev,
+      [parameter]: value
+    }));
+  };
+
   const onSubmit = (data: FormData) => {
     console.log('Dane formularza:', data);
+    console.log('Parametry z dashboard:', dashboardParameters);
     
     try {
-      // Przygotowanie danych dla kalkulacji aktuarialnej
+      // Przygotowanie danych dla kalkulacji aktuarialnej z parametrami z dashboard
       const personData: PersonData = {
         age: data.age,
         gender: data.gender,
@@ -62,16 +123,32 @@ const FormPage: React.FC = () => {
         retirementYear: data.retirementYear,
         currentSavings: data.currentSavings || 0,
         contributionPeriod: data.contributionPeriod || 0,
-        includeSickLeave: data.includeSickLeave || false
+        includeSickLeave: data.includeSickLeave || false,
+        professionalGroup: data.professionalGroup,
+        // Dodaj parametry z dashboard
+        historicalSalaries: dashboardParameters.historicalSalaries,
+        sicknessPeriods: dashboardParameters.sicknessPeriods,
+        salaryGrowthRate: dashboardParameters.salaryGrowthRate,
+        contributionValorizationRate: dashboardParameters.contributionValorizationRate,
+        inflationRate: dashboardParameters.inflationRate,
+        forecastHorizon: dashboardParameters.forecastHorizon,
+        mainAccount: dashboardParameters.mainAccount,
+        subAccount: dashboardParameters.subAccount,
+        showAccountGrowth: dashboardParameters.showAccountGrowth,
+        includeValorization: dashboardParameters.includeValorization
       };
 
-      // Parametry FUS20 - wariant pośredni jako domyślny
+      // Parametry FUS20 z dashboard zamiast stałych wartości
       const fus20Params: FUS20Parameters = {
-        scenario: 'intermediate',
-        unemploymentRate: 5.2,
-        wageGrowth: 3.5,
-        inflation: 2.5,
-        contributionCollection: 95.0
+        scenario: dashboardParameters.fus20Variant || 'intermediate',
+        unemploymentRate: dashboardParameters.unemploymentRate || 5.2,
+        wageGrowth: dashboardParameters.realWageGrowth || 3.5,
+        inflation: dashboardParameters.generalInflation || 2.5,
+        contributionCollection: dashboardParameters.contributionCollection || 95.0,
+        fus20Variant: dashboardParameters.fus20Variant,
+        generalInflation: dashboardParameters.generalInflation,
+        pensionerInflation: dashboardParameters.pensionerInflation,
+        realGDPGrowth: dashboardParameters.realGDPGrowth
       };
 
       // Wykonanie kalkulacji aktuarialnej
@@ -294,6 +371,15 @@ const FormPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Professional Context */}
+            <ProfessionalContext
+              selectedGroupId={selectedProfessionalGroup}
+              onGroupSelect={(groupId) => {
+                setSelectedProfessionalGroup(groupId);
+                setValue('professionalGroup', groupId);
+              }}
+            />
+
             {/* Submit Button */}
             <div className="flex justify-center space-x-4">
               <Link
@@ -311,6 +397,14 @@ const FormPage: React.FC = () => {
               </button>
             </div>
           </form>
+
+          {/* Advanced Dashboard - poza formularzem */}
+          <div className="mt-8">
+            <AdvancedDashboard
+              onParameterChange={handleParameterChange}
+              currentParameters={dashboardParameters}
+            />
+          </div>
         </div>
       </div>
     </div>

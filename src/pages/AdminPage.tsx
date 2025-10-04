@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Shield, Users, FileText, Database, Settings, Download, Upload, AlertTriangle } from 'lucide-react';
 import { Bar, Line } from 'react-chartjs-2';
 import { generateAdminXLSReport, generateSampleAdminData, type AdminReportEntry } from '../utils/reportGenerator';
+import { AdminReporting } from '../components/ReportingSystem';
 
 const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -356,7 +357,10 @@ const AdminPage: React.FC = () => {
             {/* Reports Tab */}
             {activeTab === 'reports' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-zus-navy">Raporty systemowe</h3>
+                {/* Nowy komponent raportowania */}
+                <AdminReporting />
+                
+                <h3 className="text-lg font-semibold text-zus-navy">Raporty systemowe (Legacy)</h3>
                 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="bg-zus-gray-50 p-6 rounded-lg">
