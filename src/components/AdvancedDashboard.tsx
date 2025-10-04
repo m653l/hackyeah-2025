@@ -13,7 +13,11 @@ const DASHBOARD_TAB_KEY = 'advancedDashboardTab';
 // Funkcje pomocnicze dla localStorage
 const saveDashboardData = (data: any) => {
   try {
+    console.log('=== SAVE DASHBOARD DATA ===');
+    console.log('Saving data to localStorage:', data);
+    console.log('Storage key:', DASHBOARD_STORAGE_KEY);
     localStorage.setItem(DASHBOARD_STORAGE_KEY, JSON.stringify(data));
+    console.log('Data saved successfully');
   } catch (error) {
     console.warn('Nie można zapisać danych dashboard do localStorage:', error);
   }
@@ -21,8 +25,13 @@ const saveDashboardData = (data: any) => {
 
 const getSavedDashboardData = () => {
   try {
+    console.log('=== GET SAVED DASHBOARD DATA ===');
+    console.log('Storage key:', DASHBOARD_STORAGE_KEY);
     const saved = localStorage.getItem(DASHBOARD_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : {};
+    console.log('Raw saved data:', saved);
+    const parsed = saved ? JSON.parse(saved) : {};
+    console.log('Parsed data:', parsed);
+    return parsed;
   } catch (error) {
     console.warn('Nie można odczytać danych dashboard z localStorage:', error);
     return {};
@@ -78,10 +87,22 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
 
   // Funkcja do aktualizacji parametrów z zapisem do localStorage
   const handleParameterChange = (parameter: string, value: any) => {
-    const updatedData = { ...dashboardData, [parameter]: value };
-    setDashboardData(updatedData);
-    saveDashboardData(updatedData);
+    console.log('=== HANDLE PARAMETER CHANGE ===');
+    console.log('Parameter:', parameter);
+    console.log('Value:', value);
+    console.log('Current dashboardData:', dashboardData);
+    
+    setDashboardData(prevData => {
+      const updatedData = { ...prevData, [parameter]: value };
+      console.log('Updated data (using prevData):', updatedData);
+      
+      // Zapisz do localStorage z aktualnym stanem
+      saveDashboardData(updatedData);
+      return updatedData;
+    });
+    
     onParameterChange(parameter, value);
+    console.log('Parameter change completed for:', parameter);
   };
 
   // Funkcja do zmiany zakładki z zapisem

@@ -89,15 +89,21 @@ const FormPage: React.FC = () => {
   // Funkcja do odczytywania parametrów dashboard z localStorage
   const getSavedDashboardData = () => {
     try {
+      console.log('=== FORMPAGE: GET SAVED DASHBOARD DATA ===');
       const savedData = localStorage.getItem('advancedDashboard');
+      console.log('RAW localStorage data:', savedData);
       if (savedData) {
         const parsed = JSON.parse(savedData);
         console.log('Załadowane parametry dashboard z localStorage:', parsed);
+        console.log('Typ danych:', typeof parsed);
+        console.log('Klucze obiektu:', Object.keys(parsed));
+        console.log('fus20Variant w danych:', parsed.fus20Variant);
         return parsed;
       }
     } catch (error) {
       console.error('Błąd podczas odczytywania parametrów dashboard z localStorage:', error);
     }
+    console.log('Brak danych w localStorage - zwracam pusty obiekt');
     return {};
   };
 
@@ -154,35 +160,54 @@ const FormPage: React.FC = () => {
 
   // useEffect do ładowania parametrów dashboard z localStorage
   useEffect(() => {
+    console.log('=== ŁADOWANIE PARAMETRÓW DASHBOARD ===');
     const savedDashboardData = getSavedDashboardData();
+    console.log('Obecne dashboardParameters przed aktualizacją:', dashboardParameters);
     if (Object.keys(savedDashboardData).length > 0) {
       console.log('Aktualizowanie parametrów dashboard:', savedDashboardData);
-      setDashboardParameters(prev => ({
-        ...prev,
-        ...savedDashboardData
-      }));
+      setDashboardParameters(prev => {
+        const newParams = {
+          ...prev,
+          ...savedDashboardData
+        };
+        console.log('Nowe parametry dashboard po aktualizacji:', newParams);
+        return newParams;
+      });
+    } else {
+      console.log('Brak danych do załadowania - pozostawiam domyślne parametry');
     }
   }, []);
 
   // useEffect do nasłuchiwania zmian w localStorage (gdy użytkownik zmienia ustawienia w Dashboard)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
+      console.log('=== STORAGE EVENT DETECTED ===');
+      console.log('Event key:', e.key);
+      console.log('Event newValue:', e.newValue);
       if (e.key === 'advancedDashboard' && e.newValue) {
         try {
           const newData = JSON.parse(e.newValue);
           console.log('Wykryto zmianę w localStorage dashboard:', newData);
-          setDashboardParameters(prev => ({
-            ...prev,
-            ...newData
-          }));
+          setDashboardParameters(prev => {
+            const updatedParams = {
+              ...prev,
+              ...newData
+            };
+            console.log('Aktualizacja parametrów przez storage event:', updatedParams);
+            return updatedParams;
+          });
         } catch (error) {
           console.error('Błąd podczas parsowania nowych danych dashboard:', error);
         }
       }
     };
 
+    console.log('Dodawanie event listenera dla storage');
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+      console.log('Usuwanie event listenera dla storage');
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const age = watch('age');
@@ -197,10 +222,42 @@ const FormPage: React.FC = () => {
 
   // Funkcja obsługująca zmiany parametrów z Dashboard
   const handleParameterChange = (parameter: string, value: any) => {
-    setDashboardParameters(prev => ({
-      ...prev,
-      [parameter]: value
-    }));
+    console.log(`=== PARAMETER CHANGE: ${parameter} = ${value} ===`);
+    setDashboardParameters(prev => {
+      const newParams = {
+        ...prev,
+        [parameter]: value
+      };
+      console.log('Nowe parametry po zmianie:', newParams);
+      return newParams;
+    });
+  };
+
+  // Funkcja do ręcznego odświeżania parametrów dashboard
+  const refreshDashboardParameters = () => {
+    console.log('=== RĘCZNE ODŚWIEŻANIE PARAMETRÓW DASHBOARD ===');
+    console.log('Aktualne parametry dashboard przed odświeżeniem:', dashboardParameters);
+    
+    const savedDashboardData = getSavedDashboardData();
+    console.log('Dane z localStorage:', savedDashboardData);
+    
+    if (Object.keys(savedDashboardData).length > 0) {
+      console.log('Znalezione dane do odświeżenia:', savedDashboardData);
+      console.log('Sprawdzenie fus20Variant:', savedDashboardData.fus20Variant);
+      
+      setDashboardParameters(prev => {
+        const refreshedParams = {
+          ...prev,
+          ...savedDashboardData
+        };
+        console.log('Poprzednie parametry:', prev);
+        console.log('Odświeżone parametry dashboard:', refreshedParams);
+        console.log('fus20Variant po odświeżeniu:', refreshedParams.fus20Variant);
+        return refreshedParams;
+      });
+    } else {
+      console.log('Brak danych do odświeżenia');
+    }
   };
 
   const onSubmit = (data: FormData) => {
@@ -519,26 +576,89 @@ const FormPage: React.FC = () => {
             />
 
             {/* Submit Button */}
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-4">
-                <Link
-                  to="/"
-                  className="px-6 py-3 border border-zus-gray-300 rounded-md text-zus-navy hover:bg-zus-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-zus-gray-500 focus:ring-offset-2"
-                >
-                  Anuluj
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleClearForm}
-                  className="px-6 py-3 border border-zus-red text-zus-red rounded-md hover:bg-zus-red hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-zus-red focus:ring-offset-2"
-                >
-                  Wyczyść formularz
-                </button>
-              </div>
+            <div 
+              className="w-full"
+              style={{
+                display: 'flex',
+                flexDirection: 'row',
+                gap: '12px',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                marginTop: '24px'
+              }}
+            >
+              <Link
+                to="/"
+                style={{
+                  padding: '12px 24px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '6px',
+                  color: '#1e3a8a',
+                  backgroundColor: 'white',
+                  textDecoration: 'none',
+                  textAlign: 'center',
+                  minWidth: '120px',
+                  display: 'inline-block'
+                }}
+              >
+                Anuluj
+              </Link>
+              <button
+                type="button"
+                onClick={handleClearForm}
+                style={{
+                  padding: '12px 24px',
+                  border: '1px solid #dc2626',
+                  borderRadius: '6px',
+                  color: '#dc2626',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  minWidth: '160px'
+                }}
+              >
+                Wyczyść formularz
+              </button>
+              <button
+                type="button"
+                onClick={refreshDashboardParameters}
+                style={{
+                  padding: '12px 24px',
+                  border: '1px solid #2563eb',
+                  borderRadius: '6px',
+                  color: '#2563eb',
+                  backgroundColor: 'white',
+                  cursor: 'pointer',
+                  minWidth: '160px'
+                }}
+              >
+                Odśwież Dashboard
+              </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-8 py-3 bg-zus-orange text-white rounded-md font-semibold hover:bg-zus-orange/90 transition-colors focus:outline-none focus:ring-2 focus:ring-zus-orange focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  padding: '16px 32px',
+                  backgroundColor: 'rgb(0, 153, 63)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.5 : 1,
+                  minWidth: '200px',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSubmitting) {
+                    e.currentTarget.style.backgroundColor = 'rgb(0, 133, 53)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSubmitting) {
+                    e.currentTarget.style.backgroundColor = 'rgb(0, 153, 63)';
+                  }
+                }}
               >
                 {isSubmitting ? 'Obliczanie...' : 'Oblicz prognozę emerytury'}
               </button>

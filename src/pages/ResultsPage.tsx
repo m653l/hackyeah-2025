@@ -471,9 +471,6 @@ const ResultsPage: React.FC = () => {
               Dodaj kod pocztowy
             </button>
           )}
-          <button className="bg-white text-gray-700 border border-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors">
-            Udostępnij wyniki
-          </button>
         </div>
 
         {/* Wykresy */}
