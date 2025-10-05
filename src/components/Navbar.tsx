@@ -57,6 +57,12 @@ const Navbar: React.FC = () => {
               Dashboard
             </Link>
             <Link
+              to="/alternatywne-oszczedzanie"
+              className="px-4 py-2 text-zus-gray-900 hover:text-zus-green-primary hover:bg-zus-green-pale rounded-lg transition-all duration-200 font-semibold min-h-[44px] flex items-center"
+            >
+              Oszczędzanie
+            </Link>
+            <Link
               to="/admin"
               className="px-4 py-2 text-zus-gray-900 hover:text-zus-green-primary hover:bg-zus-green-pale rounded-lg transition-all duration-200 font-semibold min-h-[44px] flex items-center"
               aria-label="Panel administracyjny"

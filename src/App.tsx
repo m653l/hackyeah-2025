@@ -4,6 +4,7 @@ import FormPage from './pages/FormPage';
 import ResultsPage from './pages/ResultsPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
+import AlternativeSavingsPage from './pages/AlternativeSavingsPage';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
@@ -22,6 +23,7 @@ function App() {
           <Route path="/wyniki" element={<ResultsPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/alternatywne-oszczedzanie" element={<AlternativeSavingsPage />} />
         </Routes>
         <Footer />
         
