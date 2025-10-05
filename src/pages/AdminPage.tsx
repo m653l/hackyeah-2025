@@ -165,7 +165,7 @@ const AdminPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5 flex items-center justify-center">
+      <div className="min-h-screen bg-zus-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zus-orange mx-auto mb-4"></div>
           <p className="text-zus-gray-600">Ładowanie danych administracyjnych...</p>
@@ -175,7 +175,7 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5">
+    <div className="min-h-screen bg-zus-gray-100">
 
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
