@@ -351,12 +351,12 @@ const FormPage: React.FC = () => {
         
         // Wyniki kalkulacji
         pensionAmount: pensionResult.monthlyPension,
-        pensionAmountReal: pensionResult.monthlyPensionReal,
+        pensionAmountReal: pensionResult.realPensionValue || pensionResult.monthlyPension,
         replacementRate: pensionResult.replacementRate,
-        withSickness: pensionResult.withSickness,
-        withoutSickness: pensionResult.withoutSickness,
+        withSickness: pensionResult.sickLeaveImpact || 0,
+        withoutSickness: pensionResult.monthlyPension,
         initialCapital: pensionResult.initialCapital,
-        estimatedSavings: pensionResult.estimatedSavings,
+        estimatedSavings: pensionResult.totalContributions || 0,
         totalContributions: pensionResult.totalContributions,
         
         // Metadane

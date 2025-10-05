@@ -72,16 +72,21 @@ const AdminPage: React.FC = () => {
 
   // Funkcja do generowania raportu XLS dla administratora
   const handleGenerateAdminReport = () => {
-    if (adminStats) {
-      // Użyj rzeczywistych danych jeśli dostępne
-      const reportData = {
-        totalSimulations: adminStats.totalSimulations,
-        todaySimulations: adminStats.todaySimulations,
-        averagePensionAmount: adminStats.averagePensionAmount,
-        genderDistribution: adminStats.genderDistribution,
-        recentSimulations: adminStats.recentSimulations,
-        systemUsage: adminStats.systemUsage
-      };
+    if (adminStats && adminStats.recentSimulations.length > 0) {
+      // Konwertuj dane AdminStats na format AdminReportEntry[]
+      const reportData = adminStats.recentSimulations.map(sim => ({
+        dateUsed: sim.createdAt.split(' ')[0] || new Date().toISOString().split('T')[0],
+        timeUsed: sim.createdAt.split(' ')[1] || new Date().toTimeString().split(' ')[0],
+        expectedPension: sim.pensionAmount,
+        age: sim.age,
+        gender: sim.gender === 'Mężczyzna' ? 'M' : 'K',
+        salary: 0, // Nie mamy tej informacji w recentSimulations
+        includedSickness: false, // Nie mamy tej informacji
+        accumulatedFunds: 0, // Nie mamy tej informacji
+        actualPension: sim.pensionAmount,
+        realPension: sim.pensionAmount,
+        postalCode: undefined
+      }));
       generateAdminXLSReport(reportData);
     } else {
       // Fallback do przykładowych danych
@@ -94,10 +99,10 @@ const AdminPage: React.FC = () => {
   const systemStats = {
     totalUsers: adminStats?.totalSimulations || 15847,
     simulationsToday: adminStats?.todaySimulations || 0, // Zmieniono z 342 na 0 jako fallback
-    simulationsThisMonth: adminStats?.monthSimulations || 8756,
+    simulationsThisMonth: adminStats?.totalSimulations || 8756, // Używamy totalSimulations zamiast monthSimulations
     avgResponseTime: 1.2,
     systemUptime: 99.8,
-    dataLastUpdated: adminStats?.lastUpdated || '2025-01-15 08:30:00',
+    dataLastUpdated: new Date().toLocaleString('pl-PL'), // Używamy aktualnej daty zamiast lastUpdated
   };
 
   // Przygotowanie danych dla wykresów
@@ -344,11 +349,9 @@ const AdminPage: React.FC = () => {
                     <p className="text-sm text-zus-blue">
                       • Dane aktualizowane w czasie rzeczywistym
                     </p>
-                    {adminStats && (
-                      <p className="text-sm text-zus-blue">
-                        • Ostatnia aktualizacja: {new Date(adminStats.lastUpdated).toLocaleString('pl-PL')}
-                      </p>
-                    )}
+                    <p className="text-sm text-zus-blue">
+                      • Ostatnia aktualizacja: {new Date().toLocaleString('pl-PL')}
+                    </p>
                   </div>
                 </div>
               </div>
