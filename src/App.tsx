@@ -7,6 +7,7 @@ import AdminPage from './pages/AdminPage';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import { ChatBot } from './components/chat/ChatBot';
 
 function App() {
   return (
@@ -22,6 +23,13 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
         <Footer />
+        
+        {/* AI Chatbot - dostępny na wszystkich stronach */}
+        <ChatBot 
+          position="bottom-right"
+          theme="light"
+          className="z-50"
+        />
       </div>
     </Router>
   );
