@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Settings, Shield } from 'lucide-react';
+import logoImg from '../assets/logo.png';
+
 
 const Navbar: React.FC = () => {
   return (
@@ -8,18 +10,25 @@ const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
-            <div className="bg-zus-green-primary p-2 rounded-lg mr-3">
+            <div className="p-2 rounded-lg mr-3 border border-gray-200 shadow-sm flex items-center justify-center">
               <img 
-                src="/logo.png" 
+                src={logoImg} 
                 alt="ZUS Logo" 
-                className="h-10 w-10 object-contain" 
+                className="h-12 w-12 object-contain" 
+                onLoad={(e) => {
+                  console.log('✅ Logo loaded successfully!', e.currentTarget.src);
+                }}
                 onError={(e) => {
+                  console.error('❌ Logo loading failed:', e.currentTarget.src);
                   e.currentTarget.style.display = 'none';
                   const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (fallback) fallback.style.display = 'block';
+                  if (fallback) {
+                    fallback.style.display = 'block';
+                    console.log('Showing fallback Shield icon');
+                  }
                 }}
               />
-              <Shield className="h-10 w-10 text-white" style={{ display: 'none' }} />
+              <Shield className="h-12 w-12 text-zus-navy" style={{ display: 'none' }} />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-zus-navy">
