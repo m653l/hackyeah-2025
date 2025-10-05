@@ -27,24 +27,29 @@ graph TD
 
 ## 2. Opis Technologii
 
-- **Frontend**: React@18 + TypeScript + Tailwind CSS + Vite
-- **AI Integration**: Google Generative AI SDK (@google/generative-ai)
-- **Database**: Supabase (PostgreSQL) - dla historii czatu i kontekstu
-- **State Management**: React useState/useContext
-- **Icons**: Lucide React
+* **Frontend**: React\@18 + TypeScript + Tailwind CSS + Vite
+
+* **AI Integration**: Google Generative AI SDK (@google/generative-ai)
+
+* **Database**: Supabase (PostgreSQL) - dla historii czatu i kontekstu
+
+* **State Management**: React useState/useContext
+
+* **Icons**: Lucide React
 
 ## 3. Definicje Tras
 
-| Trasa | Cel |
-|-------|-----|
+| Trasa                      | Cel                                                        |
+| -------------------------- | ---------------------------------------------------------- |
 | Wszystkie istniejące trasy | Czatbot dostępny jako floating component na każdej stronie |
-| /chat (opcjonalnie) | Dedykowana strona czatu w trybie pełnoekranowym |
+| /chat (opcjonalnie)        | Dedykowana strona czatu w trybie pełnoekranowym            |
 
 ## 4. Definicje API
 
 ### 4.1 Core API
 
 **Integracja z Google Gemini**
+
 ```typescript
 // Konfiguracja Gemini
 interface GeminiConfig {
@@ -60,24 +65,28 @@ interface GeminiConfig {
 ```
 
 **Wysyłanie wiadomości do AI**
+
 ```typescript
 POST /api/chat/message (wewnętrzne)
 ```
 
 Request:
-| Nazwa Parametru | Typ Parametru | Wymagany | Opis |
-|-----------------|---------------|----------|------|
-| message | string | true | Treść wiadomości użytkownika |
-| context | ChatContext | false | Kontekst symulacji użytkownika |
-| conversationHistory | Message[] | false | Historia rozmowy |
+
+| Nazwa Parametru     | Typ Parametru | Wymagany | Opis                           |
+| ------------------- | ------------- | -------- | ------------------------------ |
+| message             | string        | true     | Treść wiadomości użytkownika   |
+| context             | ChatContext   | false    | Kontekst symulacji użytkownika |
+| conversationHistory | Message\[]    | false    | Historia rozmowy               |
 
 Response:
-| Nazwa Parametru | Typ Parametru | Opis |
-|-----------------|---------------|------|
-| response | string | Odpowiedź wygenerowana przez AI |
-| timestamp | Date | Czas wygenerowania odpowiedzi |
+
+| Nazwa Parametru | Typ Parametru | Opis                            |
+| --------------- | ------------- | ------------------------------- |
+| response        | string        | Odpowiedź wygenerowana przez AI |
+| timestamp       | Date          | Czas wygenerowania odpowiedzi   |
 
 Przykład:
+
 ```json
 {
   "message": "Jak mogę zwiększyć wysokość emerytury?",
@@ -91,15 +100,17 @@ Przykład:
 ```
 
 **Zapisywanie historii czatu**
+
 ```typescript
 POST /api/chat/history
 ```
 
 Request:
-| Nazwa Parametru | Typ Parametru | Wymagany | Opis |
-|-----------------|---------------|----------|------|
-| sessionId | string | true | Identyfikator sesji użytkownika |
-| messages | Message[] | true | Lista wiadomości do zapisania |
+
+| Nazwa Parametru | Typ Parametru | Wymagany | Opis                            |
+| --------------- | ------------- | -------- | ------------------------------- |
+| sessionId       | string        | true     | Identyfikator sesji użytkownika |
+| messages        | Message\[]    | true     | Lista wiadomości do zapisania   |
 
 ## 5. Architektura Serwera
 
@@ -154,7 +165,8 @@ erDiagram
 
 ### 6.2 Język Definicji Danych (DDL)
 
-**Tabela Sesji Czatu (chat_sessions)**
+**Tabela Sesji Czatu (chat\_sessions)**
+
 ```sql
 -- Tworzenie tabeli
 CREATE TABLE chat_sessions (
@@ -170,7 +182,8 @@ CREATE INDEX idx_chat_sessions_session_id ON chat_sessions(session_id);
 CREATE INDEX idx_chat_sessions_created_at ON chat_sessions(created_at DESC);
 ```
 
-**Tabela Wiadomości Czatu (chat_messages)**
+**Tabela Wiadomości Czatu (chat\_messages)**
+
 ```sql
 -- Tworzenie tabeli
 CREATE TABLE chat_messages (
@@ -188,7 +201,8 @@ CREATE INDEX idx_chat_messages_created_at ON chat_messages(created_at DESC);
 CREATE INDEX idx_chat_messages_type ON chat_messages(message_type);
 ```
 
-**Tabela Kontekstu Symulacji (simulation_context)**
+**Tabela Kontekstu Symulacji (simulation\_context)**
+
 ```sql
 -- Tworzenie tabeli
 CREATE TABLE simulation_context (
@@ -203,6 +217,7 @@ CREATE INDEX idx_simulation_context_session_id ON simulation_context(session_id)
 ```
 
 **Uprawnienia Supabase**
+
 ```sql
 -- Uprawnienia dla roli anon (publiczny dostęp)
 GRANT SELECT, INSERT ON chat_sessions TO anon;
@@ -216,6 +231,7 @@ GRANT ALL PRIVILEGES ON simulation_context TO authenticated;
 ```
 
 **Dane inicjalne**
+
 ```sql
 -- Przykładowe szybkie pytania
 INSERT INTO chat_messages (session_id, message_type, content, metadata)
@@ -261,3 +277,4 @@ src/
 └── types/
     └── chat.ts                   # Typy TypeScript dla czatu
 ```
+

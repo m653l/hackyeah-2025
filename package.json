@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.58.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/react-router-dom": "^5.3.3",
+    "accessibility-react-widget": "^2.0.1",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

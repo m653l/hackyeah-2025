@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import { ChatBot } from './components/chat/ChatBot';
+import Accessibilik from 'accessibility-react-widget';
 
 function App() {
   return (
@@ -30,6 +31,9 @@ function App() {
           theme="light"
           className="z-50"
         />
+        
+        {/* Widget dostępności - dostępny na wszystkich stronach */}
+        <Accessibilik />
       </div>
     </Router>
   );

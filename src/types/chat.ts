@@ -91,7 +91,7 @@ export interface ChatState {
 
 export interface GeminiConfig {
   apiKey: string;
-  model: 'gemini-pro';
+  model: 'models/gemini-flash-latest';
   generationConfig: {
     temperature: number;
     topK: number;
