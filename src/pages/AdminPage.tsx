@@ -1,36 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Users, FileText, Database, Settings, Download, Upload, AlertTriangle } from 'lucide-react';
 // import logoUrl from '/logo.png?url';
 import { Bar, Line } from 'react-chartjs-2';
 import { generateAdminXLSReport, generateSampleAdminData } from '../utils/reportGenerator';
 import { AdminReporting } from '../components/ReportingSystem';
+import { 
+  getAdminStats, 
+  getSimulationTrends, 
+  getCountyStats,
+  type AdminStats,
+  type SimulationTrend,
+  type CountyStats
+} from '../utils/adminService';
+import { logDashboardAccess } from '../utils/supabaseService';
 
 const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
+  const [simulationTrends, setSimulationTrends] = useState<SimulationTrend[]>([]);
+  const [countyStats, setCountyStats] = useState<CountyStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Ładowanie danych przy inicjalizacji
+  useEffect(() => {
+    const loadAdminData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Loguj dostęp do dashboardu
+        await logDashboardAccess();
+
+        // Pobierz wszystkie dane równolegle
+        const [stats, trends, counties] = await Promise.all([
+          getAdminStats(),
+          getSimulationTrends(7),
+          getCountyStats()
+        ]);
+
+        setAdminStats(stats);
+        setSimulationTrends(trends);
+        setCountyStats(counties);
+      } catch (err) {
+        console.error('Błąd ładowania danych admin:', err);
+        setError('Nie udało się załadować danych administracyjnych');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAdminData();
+  }, []);
+
+  // Odświeżanie danych co 30 sekund
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const stats = await getAdminStats();
+        if (stats) {
+          setAdminStats(stats);
+        }
+      } catch (err) {
+        console.error('Błąd odświeżania danych:', err);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Funkcja do generowania raportu XLS dla administratora
   const handleGenerateAdminReport = () => {
-    const sampleData = generateSampleAdminData();
-    generateAdminXLSReport(sampleData);
+    if (adminStats) {
+      // Użyj rzeczywistych danych jeśli dostępne
+      const reportData = {
+        totalSimulations: adminStats.totalSimulations,
+        todaySimulations: adminStats.todaySimulations,
+        averagePensionAmount: adminStats.averagePensionAmount,
+        genderDistribution: adminStats.genderDistribution,
+        recentSimulations: adminStats.recentSimulations,
+        systemUsage: adminStats.systemUsage
+      };
+      generateAdminXLSReport(reportData);
+    } else {
+      // Fallback do przykładowych danych
+      const sampleData = generateSampleAdminData();
+      generateAdminXLSReport(sampleData);
+    }
   };
 
-  // Sample admin data
+  // Sample admin data (fallback)
   const systemStats = {
-    totalUsers: 15847,
-    simulationsToday: 342,
-    simulationsThisMonth: 8756,
+    totalUsers: adminStats?.totalSimulations || 15847,
+    simulationsToday: adminStats?.todaySimulations || 0, // Zmieniono z 342 na 0 jako fallback
+    simulationsThisMonth: adminStats?.monthSimulations || 8756,
     avgResponseTime: 1.2,
     systemUptime: 99.8,
-    dataLastUpdated: '2025-01-15 08:30:00',
+    dataLastUpdated: adminStats?.lastUpdated || '2025-01-15 08:30:00',
   };
 
+  // Przygotowanie danych dla wykresów
   const usageData = {
-    labels: ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'],
+    labels: simulationTrends.length > 0 
+      ? simulationTrends.map(trend => {
+          const date = new Date(trend.date);
+          return date.toLocaleDateString('pl-PL', { weekday: 'short' });
+        })
+      : ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz'],
     datasets: [
       {
         label: 'Liczba symulacji',
-        data: [245, 312, 289, 367, 423, 156, 98],
+        data: simulationTrends.length > 0 
+          ? simulationTrends.map(trend => trend.count)
+          : [245, 312, 289, 367, 423, 156, 98],
         backgroundColor: 'rgba(255, 179, 79, 0.8)',
         borderColor: 'rgb(255, 179, 79)',
         borderWidth: 2,
@@ -38,14 +121,21 @@ const AdminPage: React.FC = () => {
     ],
   };
 
-  const errorData = {
-    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
+  const pensionTrendData = {
+    labels: simulationTrends.length > 0
+      ? simulationTrends.map(trend => {
+          const date = new Date(trend.date);
+          return date.toLocaleDateString('pl-PL', { month: 'short', day: 'numeric' });
+        })
+      : ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
     datasets: [
       {
-        label: 'Błędy systemu',
-        data: [2, 1, 5, 8, 12, 4],
-        borderColor: 'rgb(220, 38, 127)',
-        backgroundColor: 'rgba(220, 38, 127, 0.1)',
+        label: simulationTrends.length > 0 ? 'Średnia emerytura (zł)' : 'Błędy systemu',
+        data: simulationTrends.length > 0
+          ? simulationTrends.map(trend => trend.averagePension)
+          : [2, 1, 5, 8, 12, 4],
+        borderColor: simulationTrends.length > 0 ? 'rgb(0, 153, 63)' : 'rgb(220, 38, 127)',
+        backgroundColor: simulationTrends.length > 0 ? 'rgba(0, 153, 63, 0.1)' : 'rgba(220, 38, 127, 0.1)',
         tension: 0.1,
       },
     ],
@@ -67,6 +157,17 @@ const AdminPage: React.FC = () => {
     { id: 'reports', name: 'Raporty', icon: FileText },
     { id: 'settings', name: 'Ustawienia', icon: Settings },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zus-orange mx-auto mb-4"></div>
+          <p className="text-zus-gray-600">Ładowanie danych administracyjnych...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5">
@@ -212,25 +313,42 @@ const AdminPage: React.FC = () => {
 
                   <div className="bg-zus-gray-50 p-6 rounded-lg">
                     <h3 className="text-lg font-semibold text-zus-navy mb-4">
-                      Błędy systemu (ostatnie 24h)
+                      {simulationTrends.length > 0 ? 'Średnia wysokość emerytury' : 'Błędy systemu (ostatnie 24h)'}
                     </h3>
-                    <Line data={errorData} options={chartOptions} />
+                    <Line data={pensionTrendData} options={chartOptions} />
                   </div>
                 </div>
 
                 {/* System Alerts */}
-                <div className="bg-zus-red/10 border border-zus-red/20 rounded-lg p-4">
+                {error && (
+                  <div className="bg-zus-red/10 border border-zus-red/20 rounded-lg p-4">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-5 w-5 text-zus-red mr-2" />
+                      <h3 className="text-lg font-semibold text-zus-red">Błąd systemu</h3>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-sm text-zus-red">{error}</p>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-zus-blue/10 border border-zus-blue/20 rounded-lg p-4">
                   <div className="flex items-center">
-                    <AlertTriangle className="h-5 w-5 text-zus-red mr-2" />
-                    <h3 className="text-lg font-semibold text-zus-red">Alerty systemowe</h3>
+                    <Shield className="h-5 w-5 text-zus-blue mr-2" />
+                    <h3 className="text-lg font-semibold text-zus-blue">Status systemu</h3>
                   </div>
                   <div className="mt-3 space-y-2">
-                    <p className="text-sm text-zus-red">
-                      • Wysokie obciążenie serwera w godzinach 14:00-16:00
+                    <p className="text-sm text-zus-blue">
+                      • System działa w trybie produkcyjnym
                     </p>
-                    <p className="text-sm text-zus-red">
-                      • Aktualizacja danych FUS20 zaplanowana na 20.01.2025
+                    <p className="text-sm text-zus-blue">
+                      • Dane aktualizowane w czasie rzeczywistym
                     </p>
+                    {adminStats && (
+                      <p className="text-sm text-zus-blue">
+                        • Ostatnia aktualizacja: {new Date(adminStats.lastUpdated).toLocaleString('pl-PL')}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -240,11 +358,41 @@ const AdminPage: React.FC = () => {
             {activeTab === 'users' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-zus-navy">Zarządzanie użytkownikami</h3>
-                  <button className="bg-zus-orange text-white px-4 py-2 rounded-md hover:bg-zus-orange/90 transition-colors">
-                    Eksportuj listę
+                  <h3 className="text-lg font-semibold text-zus-navy">Ostatnie symulacje</h3>
+                  <button 
+                    onClick={handleGenerateAdminReport}
+                    className="bg-zus-orange text-white px-4 py-2 rounded-md hover:bg-zus-orange/90 transition-colors flex items-center"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Eksportuj raport
                   </button>
                 </div>
+
+                {/* Statystyki użytkowników */}
+                {adminStats && (
+                  <div className="grid md:grid-cols-3 gap-6 mb-6">
+                    <div className="bg-zus-green/10 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-zus-gray-600">Rozkład płci</h4>
+                      <div className="mt-2">
+                        <p className="text-lg font-semibold text-zus-navy">
+                          M: {adminStats.genderDistribution.male} | K: {adminStats.genderDistribution.female}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-zus-orange/10 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-zus-gray-600">Średni wiek</h4>
+                      <div className="mt-2">
+                        <p className="text-lg font-semibold text-zus-navy">{adminStats.averageAge} lat</p>
+                      </div>
+                    </div>
+                    <div className="bg-zus-blue/10 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-zus-gray-600">Średnia emerytura</h4>
+                      <div className="mt-2">
+                        <p className="text-lg font-semibold text-zus-navy">{adminStats.averagePensionAmount.toLocaleString()} zł</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-zus-gray-50 rounded-lg overflow-hidden">
                   <table className="min-w-full divide-y divide-zus-gray-200">
@@ -254,35 +402,60 @@ const AdminPage: React.FC = () => {
                           ID
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-zus-gray-500 uppercase tracking-wider">
-                          Ostatnia aktywność
+                          Wiek
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-zus-gray-500 uppercase tracking-wider">
-                          Liczba symulacji
+                          Płeć
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-zus-gray-500 uppercase tracking-wider">
-                          Status
+                          Emerytura (zł)
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-zus-gray-500 uppercase tracking-wider">
+                          Data
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-zus-gray-200">
-                      {[1, 2, 3, 4, 5].map((id) => (
-                        <tr key={id}>
+                      {adminStats?.recentSimulations.map((simulation) => (
+                        <tr key={simulation.id}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-900">
-                            USR-{String(id).padStart(6, '0')}
+                            {simulation.id.substring(0, 8)}...
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
-                            {new Date(Date.now() - Math.random() * 86400000).toLocaleString('pl-PL')}
+                            {simulation.age}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
-                            {Math.floor(Math.random() * 20) + 1}
+                            {simulation.gender}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-zus-green/20 text-zus-green">
-                              Aktywny
-                            </span>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
+                            {simulation.pensionAmount.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
+                            {simulation.createdAt}
                           </td>
                         </tr>
-                      ))}
+                      )) || (
+                        // Fallback data jeśli brak rzeczywistych danych
+                        [1, 2, 3, 4, 5].map((id) => (
+                          <tr key={id}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-900">
+                              SIM-{String(id).padStart(6, '0')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
+                              {Math.floor(Math.random() * 30) + 25}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
+                              {Math.random() > 0.5 ? 'Mężczyzna' : 'Kobieta'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
+                              {(Math.floor(Math.random() * 2000) + 2000).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-zus-gray-500">
+                              {new Date(Date.now() - Math.random() * 86400000).toLocaleString('pl-PL')}
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -292,7 +465,72 @@ const AdminPage: React.FC = () => {
             {/* Data Tab */}
             {activeTab === 'data' && (
               <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-zus-navy">Zarządzanie danymi</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-zus-navy">Zarządzanie danymi</h3>
+                  <div className="flex space-x-2">
+                    <button className="bg-zus-green text-white px-4 py-2 rounded-md hover:bg-zus-green/90 transition-colors flex items-center">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Import danych
+                    </button>
+                    <button className="bg-zus-orange text-white px-4 py-2 rounded-md hover:bg-zus-orange/90 transition-colors flex items-center">
+                      <Download className="h-4 w-4 mr-2" />
+                      Eksport danych
+                    </button>
+                  </div>
+                </div>
+
+                {/* Statystyki wariantów FUS20 */}
+                {adminStats && (
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div className="bg-zus-gray-50 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold text-zus-navy mb-4">Warianty FUS20</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zus-gray-600">Pośredni:</span>
+                          <span className="font-medium">{adminStats.fus20VariantDistribution.intermediate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zus-gray-600">Pesymistyczny:</span>
+                          <span className="font-medium">{adminStats.fus20VariantDistribution.pessimistic}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zus-gray-600">Optymistyczny:</span>
+                          <span className="font-medium">{adminStats.fus20VariantDistribution.optimistic}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-zus-gray-50 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold text-zus-navy mb-4">Top powiaty</h4>
+                      <div className="space-y-2">
+                        {adminStats.topCounties.slice(0, 5).map((county, index) => (
+                          <div key={county.county} className="flex justify-between">
+                            <span className="text-sm text-zus-gray-600">{county.county}-xxx:</span>
+                            <span className="font-medium">{county.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-zus-gray-50 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold text-zus-navy mb-4">Wydajność</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zus-gray-600">Śr. czas kalkulacji:</span>
+                          <span className="font-medium">{adminStats.calculationTimes.average}ms</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zus-gray-600">Min:</span>
+                          <span className="font-medium">{adminStats.calculationTimes.min}ms</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zus-gray-600">Max:</span>
+                          <span className="font-medium">{adminStats.calculationTimes.max}ms</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="bg-zus-gray-50 p-6 rounded-lg">

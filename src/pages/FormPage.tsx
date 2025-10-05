@@ -2,11 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calculator, User, Calendar, DollarSign } from 'lucide-react';
+import { Calculator, User, Calendar, DollarSign, Settings } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { calculatePension, type FUS20Parameters, type PersonData, type HistoricalSalary, type SicknessPeriod } from '../utils/actuarialCalculations';
 import { ProfessionalContext } from '../components/ProfessionalContext';
 import { AdvancedDashboard } from '../components/AdvancedDashboard';
+import { 
+  saveSimulation, 
+  logFormStart, 
+  logCalculationStart, 
+  logCalculationComplete, 
+  logCalculationError,
+  getSessionId,
+  type SimulationData 
+} from '../utils/supabaseService';
 // import logoUrl from '/logo.png?url';
 
 const formSchema = z.object({
@@ -260,12 +269,17 @@ const FormPage: React.FC = () => {
     }
   };
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     console.log('Dane formularza:', data);
     console.log('Parametry z dashboard:', dashboardParameters);
     
+    const calculationStartTime = Date.now();
+    
     // Zapisz dane formularza do localStorage przed przejściem do wyników
     saveFormData(data);
+    
+    // Loguj rozpoczęcie kalkulacji
+    await logCalculationStart(data);
     
     try {
       // Przygotowanie danych dla kalkulacji aktuarialnej z parametrami z dashboard
@@ -308,21 +322,73 @@ const FormPage: React.FC = () => {
       // Wykonanie kalkulacji aktuarialnej
       const pensionResult = calculatePension(personData, fus20Params);
       
+      const calculationEndTime = Date.now();
+      const calculationDuration = calculationEndTime - calculationStartTime;
+      
       console.log('Wyniki kalkulacji:', pensionResult);
       console.log('Dane osobowe:', personData);
       console.log('Parametry FUS20:', fus20Params);
       
-      // Przekazanie wyników do strony wyników
+      // Przygotowanie danych do zapisania w Supabase
+      const simulationData: SimulationData = {
+        // Dane wejściowe
+        age: data.age,
+        gender: data.gender === 'male' ? 'M' : 'F',
+        salary: data.salary,
+        workStartYear: data.workStartYear,
+        workEndYear: data.retirementYear,
+        currentSavings: data.currentSavings,
+        workExperience1998: data.contributionPeriod,
+        includeSickness: data.includeSickLeave,
+        
+        // Parametry FUS20
+        fus20Variant: dashboardParameters.fus20Variant === 'intermediate' ? 1 : 
+                     dashboardParameters.fus20Variant === 'pessimistic' ? 2 : 3,
+        unemploymentRate: dashboardParameters.unemploymentRate,
+        realWageGrowth: dashboardParameters.realWageGrowth,
+        inflationRate: dashboardParameters.generalInflation,
+        contributionCollection: dashboardParameters.contributionCollection,
+        
+        // Wyniki kalkulacji
+        pensionAmount: pensionResult.monthlyPension,
+        pensionAmountReal: pensionResult.monthlyPensionReal,
+        replacementRate: pensionResult.replacementRate,
+        withSickness: pensionResult.withSickness,
+        withoutSickness: pensionResult.withoutSickness,
+        initialCapital: pensionResult.initialCapital,
+        estimatedSavings: pensionResult.estimatedSavings,
+        totalContributions: pensionResult.totalContributions,
+        
+        // Metadane
+        sessionId: getSessionId(),
+        calculationDurationMs: calculationDuration
+      };
+      
+      // Zapisz symulację do Supabase
+      const savedSimulation = await saveSimulation(simulationData);
+      
+      // Loguj zakończenie kalkulacji
+      await logCalculationComplete(
+        savedSimulation?.id || 'unknown', 
+        pensionResult.monthlyPension
+      );
+      
+      // Przekazanie wyników do strony wyników (z ID symulacji jeśli zapisano)
       navigate('/wyniki', { 
         state: { 
           formData: data, 
           pensionResult,
           personData,
-          fus20Params
+          fus20Params,
+          simulationId: savedSimulation?.id
         } 
       });
     } catch (error) {
       console.error('Błąd podczas obliczania emerytury:', error);
+      
+      // Loguj błąd kalkulacji
+      await logCalculationError(error instanceof Error ? error.message : 'Unknown error');
+      
       alert('Wystąpił błąd podczas obliczania prognozy emerytury. Spróbuj ponownie.');
     }
   };
@@ -385,6 +451,13 @@ const FormPage: React.FC = () => {
                 className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
               >
                 Dashboard
+              </Link>
+              <Link
+                to="/admin"
+                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium flex items-center"
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Admin
               </Link>
             </nav>
           </div>

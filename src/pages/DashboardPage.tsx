@@ -405,6 +405,13 @@ const DashboardPage: React.FC = () => {
               <span className="px-4 py-2 text-zus-orange bg-zus-orange/10 rounded-lg font-medium">
                 Dashboard
               </span>
+              <Link
+                to="/admin"
+                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium flex items-center"
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Admin
+              </Link>
             </nav>
           </div>
         </div>
