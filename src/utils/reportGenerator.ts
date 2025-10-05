@@ -131,19 +131,19 @@ export const generateUserPDFReport = (data: UserReportData): void => {
     doc.line(margin, y, pageWidth - margin, y);
   };
 
-  // NAGŁÓWEK DOKUMENTU
-  doc.setFillColor(0, 102, 153); // Kolor ZUS
-  doc.rect(0, 0, pageWidth, 35, 'F');
+  // NAGŁÓWEK DOKUMENTU - Użyj zielonego koloru ZUS
+  doc.setFillColor(0, 166, 81); // Główny zielony ZUS #00A651
+  doc.rect(0, 0, pageWidth, 40, 'F'); // Zwiększ wysokość nagłówka
   
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
+  doc.setFontSize(24); // Większa czcionka
   doc.setFont('helvetica', 'bold');
-  addPolishText('RAPORT PROGNOZY EMERYTALNEJ', pageWidth / 2, 15, { align: 'center' });
+  addPolishText('RAPORT PROGNOZY EMERYTALNEJ', pageWidth / 2, 18, { align: 'center' });
   
-  doc.setFontSize(16);
-  addPolishText('Zaklad Ubezpieczen Spolecznych', pageWidth / 2, 25, { align: 'center' });
+  doc.setFontSize(14);
+  addPolishText('ZUS na Plus - Zaklad Ubezpieczen Spolecznych', pageWidth / 2, 32, { align: 'center' });
 
-  yPosition = 50;
+  yPosition = 55; // Zwiększ odstęp po większym nagłówku
   doc.setTextColor(0, 0, 0);
 
   // Data wygenerowania
@@ -161,17 +161,17 @@ export const generateUserPDFReport = (data: UserReportData): void => {
   addPolishText(`Wygenerowano: ${dateStr} ${timeStr}`, pageWidth - margin, yPosition, { align: 'right' });
   yPosition += 20;
 
-  // SEKCJA 1: DANE OSOBOWE
-  doc.setFillColor(245, 245, 245);
-  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 20, 'F');
+  // SEKCJA 1: DANE OSOBOWE - Użyj jasnego zielonego tła ZUS
+  doc.setFillColor(232, 245, 237); // Jasny zielony ZUS #E8F5ED
+  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 22, 'F'); // Zwiększ wysokość
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 102, 153);
-  addPolishText('DANE OSOBOWE', margin + 5, yPosition + 7);
-  yPosition += 25;
+  doc.setTextColor(30, 58, 138); // Granatowy ZUS #1E3A8A
+  addPolishText('DANE OSOBOWE', margin + 5, yPosition + 8);
+  yPosition += 27; // Zwiększ odstęp
 
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(75, 85, 99); // Szary ZUS #4B5563 dla tekstu
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
 
@@ -185,42 +185,44 @@ export const generateUserPDFReport = (data: UserReportData): void => {
 
   personalData.forEach(([label, value]) => {
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138); // Granatowy dla etykiet
     addPolishText(label, margin + 5, yPosition);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(75, 85, 99); // Szary dla wartości
     addPolishText(value, margin + 90, yPosition);
-    yPosition += 15; // Zwiększ odstęp między liniami
+    yPosition += 16; // Zwiększ odstęp między liniami
   });
 
   yPosition += 10;
   addSeparatorLine(yPosition);
   yPosition += 20;
 
-  // SEKCJA 2: WYNIKI PROGNOZY EMERYTALNEJ
-  doc.setFillColor(245, 245, 245);
-  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 20, 'F');
+  // SEKCJA 2: WYNIKI PROGNOZY EMERYTALNEJ - Użyj jasnego zielonego tła ZUS
+  doc.setFillColor(232, 245, 237); // Jasny zielony ZUS #E8F5ED
+  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 22, 'F'); // Zwiększ wysokość
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 102, 153);
-  addPolishText('WYNIKI PROGNOZY EMERYTALNEJ', margin + 5, yPosition + 7);
-  yPosition += 25;
+  doc.setTextColor(30, 58, 138); // Granatowy ZUS #1E3A8A
+  addPolishText('WYNIKI PROGNOZY EMERYTALNEJ', margin + 5, yPosition + 8);
+  yPosition += 27; // Zwiększ odstęp
 
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(75, 85, 99); // Szary ZUS #4B5563
   doc.setFontSize(11);
 
-  // Główny wynik - miesięczna emerytura
-  doc.setFillColor(255, 248, 220);
-  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 25, 'F');
+  // Główny wynik - miesięczna emerytura - Użyj zielonego ZUS
+  doc.setFillColor(232, 245, 237); // Jasny zielony ZUS #E8F5ED
+  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 30, 'F'); // Zwiększ wysokość
   
-  doc.setFontSize(14);
+  doc.setFontSize(15); // Zwiększ czcionkę
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(204, 102, 0);
-  addPolishText('Prognozowana miesieczna emerytura:', margin + 5, yPosition + 5);
-  doc.setFontSize(18);
-  addPolishText(formatCurrency(data.pensionResults.monthlyPension || 0), margin + 5, yPosition + 18);
-  yPosition += 35;
+  doc.setTextColor(0, 166, 81); // Główny zielony ZUS #00A651
+  addPolishText('Prognozowana miesieczna emerytura:', margin + 5, yPosition + 6);
+  doc.setFontSize(20); // Większa czcionka dla kwoty
+  addPolishText(formatCurrency(data.pensionResults.monthlyPension || 0), margin + 5, yPosition + 22);
+  yPosition += 40; // Zwiększ odstęp po głównym wyniku
 
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(75, 85, 99); // Szary ZUS #4B5563
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
 
@@ -235,27 +237,29 @@ export const generateUserPDFReport = (data: UserReportData): void => {
 
   pensionData.forEach(([label, value]) => {
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138); // Granatowy dla etykiet
     addPolishText(label, margin + 5, yPosition);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(75, 85, 99); // Szary dla wartości
     addPolishText(value, margin + 110, yPosition);
-    yPosition += 15; // Zwiększ odstęp między liniami
+    yPosition += 16; // Zwiększ odstęp między liniami
   });
 
   yPosition += 10;
   addSeparatorLine(yPosition);
   yPosition += 20;
 
-  // SEKCJA 3: PARAMETRY PROGNOZY FUS20
-  doc.setFillColor(245, 245, 245);
-  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 20, 'F');
+  // SEKCJA 3: PARAMETRY PROGNOZY FUS20 - Użyj jasnego zielonego tła ZUS
+  doc.setFillColor(232, 245, 237); // Jasny zielony ZUS #E8F5ED
+  doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 22, 'F'); // Zwiększ wysokość
   
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 102, 153);
-  addPolishText('PARAMETRY PROGNOZY FUS20', margin + 5, yPosition + 7);
-  yPosition += 25;
+  doc.setTextColor(30, 58, 138); // Granatowy ZUS #1E3A8A
+  addPolishText('PARAMETRY PROGNOZY FUS20', margin + 5, yPosition + 8);
+  yPosition += 27; // Zwiększ odstęp
 
-  doc.setTextColor(0, 0, 0);
+  doc.setTextColor(75, 85, 99); // Szary ZUS #4B5563
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
 
@@ -268,10 +272,12 @@ export const generateUserPDFReport = (data: UserReportData): void => {
 
   fus20Data.forEach(([label, value]) => {
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138); // Granatowy dla etykiet
     addPolishText(label, margin + 5, yPosition);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(75, 85, 99); // Szary dla wartości
     addPolishText(value, margin + 110, yPosition);
-    yPosition += 15; // Zwiększ odstęp między liniami
+    yPosition += 16; // Zwiększ odstęp między liniami
   });
 
   // SEKCJA 4: ANALIZA OPÓŹNIENIA EMERYTURY (jeśli dostępna)
@@ -280,16 +286,16 @@ export const generateUserPDFReport = (data: UserReportData): void => {
     addSeparatorLine(yPosition);
     yPosition += 20;
 
-    doc.setFillColor(245, 245, 245);
-    doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 20, 'F');
+    doc.setFillColor(232, 245, 237); // Jasny zielony ZUS #E8F5ED
+    doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 22, 'F'); // Zwiększ wysokość
     
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 102, 153);
-    addPolishText('ANALIZA OPOZNIENIA EMERYTURY', margin + 5, yPosition + 7);
-    yPosition += 25;
+    doc.setTextColor(30, 58, 138); // Granatowy ZUS #1E3A8A
+    addPolishText('ANALIZA OPOZNIENIA EMERYTURY', margin + 5, yPosition + 8);
+    yPosition += 27; // Zwiększ odstęp
 
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(75, 85, 99); // Szary ZUS #4B5563
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
 
@@ -301,10 +307,12 @@ export const generateUserPDFReport = (data: UserReportData): void => {
 
     delayData.forEach(([label, value]) => {
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 58, 138); // Granatowy dla etykiet
       addPolishText(label, margin + 5, yPosition);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(75, 85, 99); // Szary dla wartości
       addPolishText(value, margin + 120, yPosition);
-      yPosition += 15; // Zwiększ odstęp między liniami
+      yPosition += 16; // Zwiększ odstęp między liniami
     });
   }
 
@@ -312,21 +320,27 @@ export const generateUserPDFReport = (data: UserReportData): void => {
   if (data.postalCode) {
     yPosition += 20;
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 58, 138); // Granatowy dla etykiety
     addPolishText('Kod pocztowy:', margin + 5, yPosition);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(75, 85, 99); // Szary dla wartości
     addPolishText(data.postalCode, margin + 80, yPosition);
   }
 
-  // STOPKA
-  const footerY = doc.internal.pageSize.height - 25;
-  addSeparatorLine(footerY - 10);
+  // STOPKA - Użyj kolorów zgodnych z brandingiem ZUS
+  const footerY = doc.internal.pageSize.height - 30; // Zwiększ przestrzeń
+  doc.setDrawColor(0, 166, 81); // Zielona linia separatora
+  doc.line(margin, footerY - 10, pageWidth - margin, footerY - 10);
   
-  doc.setFontSize(8);
+  doc.setFontSize(9); // Zwiększ czcionkę
   doc.setFont('helvetica', 'italic');
-  doc.setTextColor(100, 100, 100);
-  addPolishText('Raport wygenerowany przez ZUS na Plus - narzedie edukacyjne', margin, footerY);
-  addPolishText('Wyniki maja charakter prognostyczny i moga roznic sie od rzeczywistych swiadczen.', margin, footerY + 8);
-  addPolishText('© 2025 Zaklad Ubezpieczen Spolecznych', pageWidth - margin, footerY + 8, { align: 'right' });
+  doc.setTextColor(75, 85, 99); // Szary ZUS #4B5563
+  addPolishText('Raport wygenerowany przez ZUS na Plus - narzedie edukacyjne do prognozy emerytalnej', margin, footerY);
+  addPolishText('Wyniki maja charakter prognostyczny i moga roznic sie od rzeczywistych swiadczen.', margin, footerY + 10);
+  
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 166, 81); // Zielony ZUS dla copyright
+  addPolishText('© 2025 Zaklad Ubezpieczen Spolecznych - ZUS na Plus', pageWidth - margin, footerY + 10, { align: 'right' });
 
   // Pobierz plik
   const fileName = `raport-prognozy-emerytalnej-${data.generatedAt.toISOString().split('T')[0]}.pdf`;

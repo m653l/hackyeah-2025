@@ -63,7 +63,7 @@ interface FUS20Scenario {
 
 const DashboardPage: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<'intermediate' | 'pessimistic' | 'optimistic'>('intermediate');
-  const [selectedCounty, setSelectedCounty] = useState('');
+  const [selectedCounty, setSelectedCounty] = useState(COUNTY_SICK_LEAVE_DATA[0]?.name || '');
   const [showAccountProjection, setShowAccountProjection] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [chartsVisible, setChartsVisible] = useState(true);
@@ -239,7 +239,7 @@ const DashboardPage: React.FC = () => {
 
   // Funkcja do generowania danych salda funduszu na podstawie parametrów
   const generateFundBalanceData = () => {
-    const baseOptimistic = [120, 150, 180, 200, 210, 220, 230];
+    const baseOptimistic = [140, 170, 200, 230, 250, 270, 290];
     const basePessimistic = [80, 60, 40, 20, -10, -30, -50];
     const baseIntermediate = [100, 105, 110, 115, 120, 125, 130];
     
@@ -622,7 +622,7 @@ const DashboardPage: React.FC = () => {
                 onChange={(e) => setSelectedCounty(e.target.value)}
                 className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:border-transparent"
               >
-                {COUNTY_PENSION_DATA.map((county) => (
+                {COUNTY_SICK_LEAVE_DATA.map((county) => (
                   <option key={county.name} value={county.name}>
                     {county.displayName}
                   </option>
