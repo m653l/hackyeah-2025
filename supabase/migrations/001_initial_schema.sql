@@ -1,4 +1,4 @@
--- Symulator Emerytalny ZUS - Initial Database Schema
+-- ZUS na Plus - Initial Database Schema
 -- Utworzenie tabel do zbierania danych użytkowników (hackathon)
 
 -- Główna tabela symulacji użytkowników

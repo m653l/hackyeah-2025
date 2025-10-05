@@ -1,4 +1,4 @@
-# Architektura Techniczna - Symulator Emerytalny ZUS
+# Architektura Techniczna - ZUS na Plus
 
 ## 1. Architecture design
 

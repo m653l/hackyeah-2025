@@ -4,11 +4,14 @@ import FormPage from './pages/FormPage';
 import ResultsPage from './pages/ResultsPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 function App() {
   return (
     <Router>
       <div className="App">
+        <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/formularz" element={<FormPage />} />
@@ -16,6 +19,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
+        <Footer />
       </div>
     </Router>
   );

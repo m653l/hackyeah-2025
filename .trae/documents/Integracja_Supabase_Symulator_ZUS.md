@@ -1,4 +1,4 @@
-# Integracja Supabase - Symulator Emerytalny ZUS
+# Integracja Supabase - ZUS na Plus
 
 ## 1. Przegląd integracji
 

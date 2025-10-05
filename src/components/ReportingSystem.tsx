@@ -290,7 +290,7 @@ export const ReportingSystem: React.FC<ReportingSystemProps> = ({
           <button
             onClick={generatePensionReport}
             disabled={isGeneratingReport || !pensionData}
-            className="w-full px-4 py-3 bg-zus-orange text-white rounded-md font-medium hover:bg-orange-600 transition-colors focus:outline-none focus:ring-2 focus:ring-zus-orange focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full px-4 py-3 bg-green-600 text-white rounded-md font-medium transition-colors hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isGeneratingReport ? (
               <>

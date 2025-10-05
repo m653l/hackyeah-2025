@@ -41,7 +41,12 @@ export const ProfessionalContext: React.FC<ProfessionalContextProps> = ({
           <select 
             value={selectedGroupId || ''} 
             onChange={(e) => onGroupSelect(e.target.value || undefined)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+            disabled={!onGroupSelect || onGroupSelect.toString().includes('() => {}')}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none transition-colors ${
+              !onGroupSelect || onGroupSelect.toString().includes('() => {}')
+                ? 'border-zus-gray-200 bg-zus-gray-100 text-zus-gray-500 cursor-not-allowed'
+                : 'border-gray-300 focus:ring-2 focus:ring-zus-green-primary focus:border-transparent'
+            }`}
           >
             <option value="">Wybierz grupę zawodową...</option>
             {professionalGroups.map((group) => (

@@ -1,486 +1,168 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Calculator, 
-  TrendingUp, 
-  Users, 
-  Settings, 
-  Shield, 
-  FileText, 
-  Award, 
+  TrendingDown, 
+  AlertTriangle, 
+  BarChart3, 
   ChevronRight, 
-  BarChart3,
-  PiggyBank,
-  Info,
   Lightbulb,
   Target,
-  Eye,
-  EyeOff
+  TrendingUp,
+  PiggyBank,
+  Users,
+  Settings
 } from 'lucide-react';
-// import logoUrl from '/logo.png?url';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
-import { PENSION_GROUPS, PENSION_STATISTICS, getRandomTrivia, contextualizePension } from '../utils/dashboardData';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
+import { Button } from '../components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 
 const HomePage: React.FC = () => {
-  const [expectedPension, setExpectedPension] = useState<string>('');
-  const [contextualization, setContextualization] = useState<string>('');
-  const [currentTrivia, setCurrentTrivia] = useState(getRandomTrivia());
-  const [showPensionInput, setShowPensionInput] = useState(false);
-
-  useEffect(() => {
-    if (expectedPension) {
-      const amount = parseFloat(expectedPension);
-      if (!isNaN(amount)) {
-        const result = contextualizePension(amount);
-        // Formatuj wynik w czytelny sposób
-        if (typeof result === 'object' && result !== null) {
-          const formattedText = `Twoja oczekiwana emerytura jest ${result.comparison}. ` +
-            `Znajdujesz się w ${result.percentile}. percentylu emerytów w Polsce. ` +
-            `Różnica względem średniej krajowej: ${result.differenceFromAverage > 0 ? '+' : ''}${result.differenceFromAverage.toFixed(0)} zł ` +
-            `(${result.percentageOfAverage.toFixed(0)}% średniej krajowej).`;
-          setContextualization(formattedText);
-        } else {
-          setContextualization(typeof result === 'string' ? result : '');
-        }
-      }
-    } else {
-      setContextualization('');
-    }
-  }, [expectedPension]);
-
-  // Przygotuj dane wykresu z opcjonalnym słupkiem użytkownika
-  const getChartData = () => {
-    const baseLabels = PENSION_GROUPS.map(group => group.name);
-    const baseData = PENSION_GROUPS.map(group => group.averageAmount);
-    const baseBackgroundColors = [
-      'rgba(220, 38, 127, 0.8)',   // zus-pink
-      'rgba(255, 102, 0, 0.8)',    // zus-orange
-      'rgba(0, 150, 136, 0.8)',    // zus-green
-      'rgba(33, 150, 243, 0.8)',   // zus-blue
-      'rgba(13, 71, 161, 0.8)',    // zus-navy
-    ];
-    const baseBorderColors = [
-      'rgba(220, 38, 127, 1)',
-      'rgba(255, 102, 0, 1)',
-      'rgba(0, 150, 136, 1)',
-      'rgba(33, 150, 243, 1)',
-      'rgba(13, 71, 161, 1)',
-    ];
-
-    // Jeśli użytkownik wprowadził kwotę emerytury, dodaj jego słupek
-    if (expectedPension && !isNaN(parseFloat(expectedPension))) {
-      const userAmount = parseFloat(expectedPension);
-      
-      // Znajdź odpowiednie miejsce dla słupka użytkownika (sortuj według wysokości)
-      let insertIndex = baseData.findIndex(amount => userAmount <= amount);
-      if (insertIndex === -1) insertIndex = baseData.length;
-
-      const labels = [...baseLabels];
-      const data = [...baseData];
-      const backgroundColors = [...baseBackgroundColors];
-      const borderColors = [...baseBorderColors];
-
-      // Wstaw dane użytkownika w odpowiednim miejscu
-      labels.splice(insertIndex, 0, 'Twoja emerytura');
-      data.splice(insertIndex, 0, userAmount);
-      backgroundColors.splice(insertIndex, 0, 'rgba(255, 215, 0, 0.9)'); // Złoty kolor
-      borderColors.splice(insertIndex, 0, 'rgba(255, 215, 0, 1)');
-
-      return { labels, data, backgroundColors, borderColors };
-    }
-
-    return { 
-      labels: baseLabels, 
-      data: baseData, 
-      backgroundColors: baseBackgroundColors, 
-      borderColors: baseBorderColors 
-    };
-  };
-
-  const chartDataConfig = getChartData();
-  const chartData = {
-    labels: chartDataConfig.labels,
-    datasets: [
-      {
-        label: 'Średnia wysokość emerytury (zł)',
-        data: chartDataConfig.data,
-        backgroundColor: chartDataConfig.backgroundColors,
-        borderColor: chartDataConfig.borderColors,
-        borderWidth: 2,
-        borderRadius: 8,
-        borderSkipped: false,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      title: {
-        display: true,
-        text: 'Średnie wysokości emerytur w Polsce (2024)',
-        font: {
-          size: 18,
-          weight: 'bold' as const,
-        },
-        color: '#0d47a1',
-        padding: 20,
-      },
-      tooltip: {
-        backgroundColor: 'rgba(13, 71, 161, 0.95)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ff6600',
-        borderWidth: 2,
-        cornerRadius: 12,
-        padding: 16,
-        displayColors: false,
-        callbacks: {
-          title: function(context: any) {
-            const dataIndex = context[0].dataIndex;
-            const label = chartDataConfig.labels[dataIndex];
-            return label;
-          },
-          label: function(context: any) {
-            const dataIndex = context.dataIndex;
-            const label = chartDataConfig.labels[dataIndex];
-            const value = chartDataConfig.data[dataIndex];
-            
-            // Jeśli to słupek użytkownika
-            if (label === 'Twoja emerytura') {
-              return [
-                `Twoja emerytura: ${value.toLocaleString('pl-PL')} zł`,
-                `To Twoja wprowadzona kwota emerytury`
-              ];
-            }
-            
-            // Dla standardowych grup emerytalnych
-            const groupIndex = PENSION_GROUPS.findIndex(group => group.name === label);
-            if (groupIndex !== -1) {
-              const group = PENSION_GROUPS[groupIndex];
-              return [
-                `Średnia: ${group.averageAmount.toLocaleString('pl-PL')} zł`,
-                `Opis: ${group.description}`,
-                `Charakterystyka: ${group.characteristics}`
-              ];
-            }
-            
-            return [`Wartość: ${value.toLocaleString('pl-PL')} zł`];
-          }
-        }
-      }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: function(value: any) {
-            return value.toLocaleString('pl-PL') + ' zł';
-          },
-          color: '#64748b',
-          font: {
-            size: 12,
-          }
-        },
-        grid: {
-          color: 'rgba(148, 163, 184, 0.1)',
-        }
-      },
-      x: {
-        ticks: {
-          color: '#64748b',
-          font: {
-            size: 11,
-          },
-          maxRotation: 45,
-        },
-        grid: {
-          display: false,
-        }
-      }
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
-    },
-    animation: {
-      duration: 1000,
-      easing: 'easeInOutQuart' as const,
-    }
-  };
-
-  const refreshTrivia = () => {
-    setCurrentTrivia(getRandomTrivia());
-  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen bg-zus-gray-100">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
-                <img 
-                  src="/logo.png" 
-                  alt="ZUS Logo" 
-                  className="h-10 w-10 object-contain" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'block';
-                  }}
-                />
-                <Shield className="h-10 w-10 text-white" style={{ display: 'none' }} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-zus-navy">
-                  ZUS na Plus
-                </h1>
-                <p className="text-sm text-slate-600">Hackathon 2025</p>
-              </div>
-            </div>
-            <nav className="hidden md:flex space-x-1">
-              <Link
-                to="/"
-                className="px-4 py-2 text-zus-orange bg-zus-orange/10 rounded-lg font-medium"
-              >
-                Strona główna
-              </Link>
-              <Link
-                to="/formularz"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
-              >
-                Symulacja
-              </Link>
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/admin"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium flex items-center"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+
 
       {/* Hero Section */}
-      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Background decorative elements */}
-        <div className="absolute inset-0 bg-gradient-to-r from-zus-navy/5 via-transparent to-zus-orange/5"></div>
-        <div className="absolute top-20 right-10 w-72 h-72 bg-gradient-to-br from-zus-orange/10 to-zus-green/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-20 left-10 w-96 h-96 bg-gradient-to-tr from-zus-blue/10 to-zus-navy/10 rounded-full blur-3xl"></div>
-        
-        <div className="relative max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center bg-gradient-to-r from-zus-orange/10 to-zus-green/10 px-6 py-3 rounded-full mb-8 border border-zus-orange/20">
-              <Award className="h-5 w-5 text-zus-orange mr-2" />
-              <span className="text-zus-navy font-semibold text-sm">
-                Oficjalne narzędzie prognostyczne ZUS
-              </span>
+      <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl md:text-6xl font-bold text-zus-gray-900 mb-6 leading-tight">
+                Czy Twoja emerytura wystarczy na godne życie?
+              </h2>
+              
+              <p className="text-lg md:text-xl text-zus-gray-600 mb-8 leading-relaxed">
+                Bezpłatny symulator ZUS pomoże Ci zaplanować przyszłość finansową. 
+                Dowiedz się już dziś, ile będziesz otrzymywać na emeryturze.
+              </p>
+              
+              {/* Kluczowe statystyki */}
+              <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="text-center p-4 bg-zus-green-pale rounded-xl">
+                  <div className="text-3xl font-bold text-zus-green-primary mb-1">47%</div>
+                  <div className="text-sm text-zus-gray-600">średnia stopa zastąpienia emerytury</div>
+                </div>
+                <div className="text-center p-4 bg-zus-green-pale rounded-xl">
+                  <div className="text-3xl font-bold text-zus-green-primary mb-1">2 850 zł</div>
+                  <div className="text-sm text-zus-gray-600">średnia emerytura w Polsce</div>
+                </div>
+              </div>
+              
+
             </div>
             
-            <h2 className="text-5xl md:text-6xl font-bold text-zus-navy mb-8 leading-tight">
-              Sprawdź swoją przyszłą
-              <span className="block bg-gradient-to-r from-zus-orange to-zus-green bg-clip-text text-transparent">
-                emeryturę
-              </span>
-            </h2>
-            
-            <p className="text-xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Nowoczesne narzędzie do prognozowania wysokości emerytury z wykorzystaniem 
-              danych aktuarialnych FUS20 i najnowszych wskaźników demograficznych.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Link
+            <div className="relative">
+              <Link 
                 to="/formularz"
-                className="group bg-gradient-to-r from-zus-orange to-zus-orange/90 text-white px-10 py-4 rounded-xl font-semibold hover:shadow-xl hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-zus-orange/30 flex items-center"
+                className="block bg-gradient-to-br from-zus-green-pale to-white p-8 rounded-2xl border border-zus-green-primary/20 cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-zus-green/10 hover:border-zus-green-primary/40"
               >
-                Rozpocznij symulację
-                <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                to="/dashboard"
-                className="group bg-white text-zus-navy px-10 py-4 rounded-xl font-semibold border-2 border-zus-navy hover:bg-zus-navy hover:text-white hover:shadow-xl hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-zus-navy/30 flex items-center"
-              >
-                Dashboard zaawansowany
-                <BarChart3 className="ml-2 h-5 w-5" />
+                <div className="text-center">
+                  <div className="bg-zus-green-primary p-4 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                    <PiggyBank className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-zus-gray-900 mb-4">
+                    Planowanie to klucz do sukcesu
+                  </h3>
+                  <p className="text-zus-gray-600">
+                    Wykorzystaj oficjalne dane ZUS i prognozy demograficzne, 
+                    aby świadomie zaplanować swoją przyszłość finansową.
+                  </p>
+                </div>
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Basic Dashboard Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold text-zus-navy mb-4">
-              Dashboard podstawowy
-            </h3>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Sprawdź swoją emeryturę w kontekście średnich krajowych i poznaj ciekawostki emerytalne
+      {/* Problem Awareness Section */}
+      <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-zus-gray-100">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-zus-gray-900 mb-4">
+              Poznaj rzeczywistość emerytalną w Polsce
+            </h2>
+            <p className="text-lg text-zus-gray-600 max-w-3xl mx-auto">
+              Świadome planowanie emerytury wymaga zrozumienia aktualnej sytuacji demograficznej i ekonomicznej
             </p>
           </div>
-
-          <div className="grid lg:grid-cols-3 gap-8 mb-16">
-            {/* Expected Pension Input */}
-            <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-zus-orange/5 to-zus-orange/10 p-8 rounded-2xl border border-zus-orange/20 h-full">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center">
-                    <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-3 rounded-xl mr-4">
-                      <Target className="h-6 w-6 text-white" />
-                    </div>
-                    <h4 className="text-xl font-bold text-zus-navy">
-                      Twoja oczekiwana emerytura
-                    </h4>
-                  </div>
-                  <button
-                    onClick={() => setShowPensionInput(!showPensionInput)}
-                    className="p-2 text-zus-orange hover:bg-zus-orange/10 rounded-lg transition-colors"
-                    aria-label={showPensionInput ? "Ukryj kalkulator" : "Pokaż kalkulator"}
-                  >
-                    {showPensionInput ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
+          
+          <div className="grid md:grid-cols-3 gap-8 mb-12">
+            <Card variant="warning" className="text-center">
+              <CardHeader>
+                <div className="bg-zus-orange p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <TrendingDown className="h-8 w-8 text-white" />
                 </div>
-                
-                {showPensionInput && (
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="expected-pension" className="block text-sm font-medium text-zus-navy mb-2">
-                        Wprowadź kwotę (zł)
-                      </label>
-                      <input
-                        id="expected-pension"
-                        type="number"
-                        value={expectedPension}
-                        onChange={(e) => setExpectedPension(e.target.value)}
-                        placeholder="np. 3000"
-                        className="w-full px-4 py-3 border border-zus-orange/30 rounded-xl focus:outline-none focus:ring-4 focus:ring-zus-orange/20 focus:border-zus-orange text-lg"
-                        aria-describedby="pension-context"
-                      />
-                    </div>
-                    
-                    {contextualization && (
-                      <div 
-                        id="pension-context"
-                        className="bg-white/80 p-4 rounded-xl border border-zus-orange/20"
-                        role="status"
-                        aria-live="polite"
-                      >
-                        <div className="flex items-start">
-                          <Info className="h-5 w-5 text-zus-orange mt-0.5 mr-3 flex-shrink-0" />
-                          <p className="text-sm text-zus-navy leading-relaxed">
-                            {contextualization}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {!showPensionInput && (
-                  <div className="text-center py-8">
-                    <PiggyBank className="h-16 w-16 text-zus-orange/60 mx-auto mb-4" />
-                    <p className="text-slate-600 mb-4">
-                      Kliknij aby sprawdzić swoją emeryturę w kontekście średnich krajowych
-                    </p>
-                    <div className="text-sm text-slate-500">
-                      Średnia emerytura w Polsce: <span className="font-semibold text-zus-navy">{PENSION_STATISTICS.nationalAverage.toLocaleString('pl-PL')} zł</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Pension Groups Visualization */}
-            <div className="lg:col-span-2">
-              <div className="bg-gradient-to-br from-zus-navy/5 to-zus-blue/10 p-8 rounded-2xl border border-zus-navy/20 h-full">
-                <div className="flex items-center mb-6">
-                  <div className="bg-gradient-to-br from-zus-navy to-zus-navy/80 p-3 rounded-xl mr-4">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <h4 className="text-xl font-bold text-zus-navy">
-                    Grupy emerytalne w Polsce
-                  </h4>
-                </div>
-                
-                <div className="h-80">
-                  <Bar data={chartData} options={chartOptions} />
-                </div>
-                
-                <div className="mt-6 text-sm text-slate-600">
-                  <p className="flex items-center">
-                    <Info className="h-4 w-4 mr-2 text-zus-blue" />
-                    Najedź kursorem na słupki aby zobaczyć szczegółowe informacje o każdej grupie
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Pension Facts/Trivia */}
-          <div className="bg-gradient-to-br from-zus-green/5 to-zus-green/10 p-8 rounded-2xl border border-zus-green/20">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <div className="bg-gradient-to-br from-zus-green to-zus-green/80 p-3 rounded-xl mr-4">
-                  <Lightbulb className="h-6 w-6 text-white" />
-                </div>
-                <h4 className="text-xl font-bold text-zus-navy">
-                  Czy wiesz, że...?
-                </h4>
-              </div>
-              <button
-                onClick={refreshTrivia}
-                className="bg-zus-green text-white px-4 py-2 rounded-lg hover:bg-zus-green/90 transition-colors focus:outline-none focus:ring-4 focus:ring-zus-green/30 text-sm font-medium"
-                aria-label="Pokaż nową ciekawostkę"
-              >
-                Nowa ciekawostka
-              </button>
-            </div>
+                <CardTitle as="h3">Stopa zastąpienia spada</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4">
+                  Emerytura z ZUS zastępuje coraz mniejszą część ostatniego wynagrodzenia. 
+                  W 2040 roku może to być tylko 35-40%.
+                </p>
+                <div className="text-2xl font-bold text-zus-orange">35-40%</div>
+                <div className="text-sm text-zus-gray-600">prognoza na 2040 rok</div>
+              </CardContent>
+            </Card>
             
-            <div className="bg-white/80 p-6 rounded-xl border border-zus-green/20">
-              <h5 className="font-semibold text-zus-navy mb-3 text-lg">
-                {currentTrivia.title}
-              </h5>
-              <p className="text-slate-700 leading-relaxed mb-4">
-                {currentTrivia.fact}
-              </p>
-              <div className="flex items-center text-sm text-zus-green font-medium">
-                <Info className="h-4 w-4 mr-2" />
-                Źródło: ZUS, GUS, Ministerstwo Finansów
-              </div>
+            <Card variant="info" className="text-center">
+              <CardHeader>
+                <div className="bg-zus-blue p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <AlertTriangle className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle as="h3">Inflacja zjada oszczędności</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4">
+                  To, co dziś kosztuje 1000 zł, za 30 lat może kosztować nawet 2500 zł. 
+                  Planowanie jest kluczowe.
+                </p>
+                <div className="text-2xl font-bold text-zus-blue">2500 zł</div>
+                <div className="text-sm text-zus-gray-600">za 30 lat (1000 zł dziś)</div>
+              </CardContent>
+            </Card>
+            
+            <Card variant="success" className="text-center">
+              <CardHeader>
+                <div className="bg-zus-green-primary p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <Lightbulb className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle as="h3">Możesz to zmienić</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-4">
+                  Świadome planowanie i dodatkowe oszczędzanie może zapewnić Ci 
+                  komfortową emeryturę.
+                </p>
+                <div className="text-2xl font-bold text-zus-green-primary">70%</div>
+                <div className="text-sm text-zus-gray-600">zalecana stopa zastąpienia</div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div className="text-center bg-white p-8 rounded-2xl border border-zus-gray-200">
+            <h3 className="text-2xl font-bold text-zus-gray-900 mb-4">
+              Nie czekaj - sprawdź swoją sytuację już dziś
+            </h3>
+            <p className="text-zus-gray-600 mb-6 max-w-2xl mx-auto">
+              Im wcześniej zaczniesz planować, tym lepiej będziesz przygotowany na przyszłość. 
+              Nasz symulator pomoże Ci zrozumieć, czego możesz się spodziewać.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                to="/formularz"
+                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-white bg-zus-green-primary rounded-lg hover:bg-zus-green-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zus-green-primary transition-colors"
+              >
+                <Calculator className="h-5 w-5 mr-2" />
+                Rozpocznij symulację
+              </Link>
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center justify-center px-6 py-3 text-base font-medium text-zus-green-primary bg-white border-2 border-zus-green-primary rounded-lg hover:bg-zus-green-pale focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zus-green-primary transition-colors"
+              >
+                <BarChart3 className="h-5 w-5 mr-2" />
+                Dashboard zaawansowany
+              </Link>
             </div>
           </div>
         </div>
@@ -512,8 +194,8 @@ const HomePage: React.FC = () => {
             </div>
             
             <div className="group bg-white p-8 rounded-2xl border border-slate-200 hover:border-zus-green/30 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
-              <div className="bg-gradient-to-br from-zus-green to-zus-green/80 p-4 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="h-8 w-8 text-white" />
+              <div className="bg-gradient-to-br from-zus-green to-zus-green-secondary p-4 rounded-xl w-fit mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg border border-zus-green/20">
+                <TrendingUp className="h-8 w-8 text-white drop-shadow-lg" />
               </div>
               <h4 className="text-xl font-bold text-zus-navy mb-3">
                 Waloryzacja składek
@@ -551,79 +233,45 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Statistics Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-zus-navy via-zus-navy/95 to-zus-navy text-white relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-zus-orange/20 via-transparent to-zus-green/20"></div>
-        </div>
-        
-        <div className="relative max-w-6xl mx-auto">
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto bg-gradient-to-br from-zus-green-pale to-white p-8 rounded-2xl border border-zus-green-primary/20">
           <div className="text-center mb-16">
-            <h3 className="text-4xl font-bold mb-4">Dane w liczbach</h3>
-            <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+            <h3 className="text-4xl font-bold mb-4 text-zus-navy">Dane w liczbach</h3>
+            <p className="text-xl text-zus-gray-600 max-w-2xl mx-auto">
               Symulator oparty na najnowszych danych i prognozach demograficznych
             </p>
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
+            <div className="text-center bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-zus-green-primary/20 shadow-lg">
               <div className="text-5xl font-bold text-zus-orange mb-4 bg-gradient-to-r from-zus-orange to-yellow-400 bg-clip-text text-transparent">
                 2080
               </div>
-              <div className="text-xl font-semibold mb-2">Rok prognozy FUS20</div>
-              <div className="text-slate-300">Długoterminowe prognozy aktuarialne</div>
+              <div className="text-xl font-semibold mb-2 text-zus-navy">Rok prognozy FUS20</div>
+              <div className="text-zus-gray-600">Długoterminowe prognozy aktuarialne</div>
             </div>
             
-            <div className="text-center bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
+            <div className="text-center bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-zus-green-primary/20 shadow-lg">
               <div className="text-5xl font-bold text-zus-green mb-4 bg-gradient-to-r from-zus-green to-emerald-400 bg-clip-text text-transparent">
                 3
               </div>
-              <div className="text-xl font-semibold mb-2">Warianty demograficzne</div>
-              <div className="text-slate-300">Pesymistyczny, pośredni, optymistyczny</div>
+              <div className="text-xl font-semibold mb-2 text-zus-navy">Warianty demograficzne</div>
+              <div className="text-zus-gray-600">Pesymistyczny, pośredni, optymistyczny</div>
             </div>
             
-            <div className="text-center bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10">
+            <div className="text-center bg-white/80 backdrop-blur-sm p-8 rounded-2xl border border-zus-green-primary/20 shadow-lg">
               <div className="text-3xl font-bold text-zus-blue mb-4 bg-gradient-to-r from-zus-blue to-blue-400 bg-clip-text text-transparent">
                 WCAG 2.0
               </div>
-              <div className="text-xl font-semibold mb-2">Zgodność z dostępnością</div>
-              <div className="text-slate-300">Aplikacja dostępna dla wszystkich</div>
+              <div className="text-xl font-semibold mb-2 text-zus-navy">Zgodność z dostępnością</div>
+              <div className="text-zus-gray-600">Aplikacja dostępna dla wszystkich</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <div className="font-bold text-lg">ZUS na Plus</div>
-                <div className="text-slate-400 text-sm">Hackathon 2025</div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-6 text-slate-400">
-              <div className="flex items-center">
-                <FileText className="h-4 w-4 mr-2" />
-                <span className="text-sm">Dokumentacja</span>
-              </div>
-              <div className="flex items-center">
-                <Shield className="h-4 w-4 mr-2" />
-                <span className="text-sm">Bezpieczeństwo</span>
-              </div>
-            </div>
-          </div>
-          <div className="border-t border-slate-800 mt-8 pt-8 text-center">
-            <p className="text-slate-400">
-              &copy; 2025 Zakład Ubezpieczeń Społecznych - Wszystkie prawa zastrzeżone
-            </p>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 };

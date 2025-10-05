@@ -1,5 +1,5 @@
-# ANALIZA IMPLEMENTACJI - SYMULATOR EMERYTALNY ZUS
-# Hackathon 2025 - Lista brakujących funkcjonalności i ulepszeń
+# ANALIZA IMPLEMENTACJI - ZUS na Plus
+#  - Lista brakujących funkcjonalności i ulepszeń
 
 ## PODSUMOWANIE OBECNEGO STANU
 

@@ -1,4 +1,4 @@
-# Dokumentacja Projektu: Symulator Emerytalny ZUS (Aktualizacja 2.0)
+# Dokumentacja Projektu: ZUS na Plus (Aktualizacja 2.0)
 
 ## 1. Wstęp
 Projekt służy zwiększeniu świadomości społeczeństwa w zakresie ryzyka starości [40, 41]. Narzędzie to ma przedstawiać wizualnie i w prosty sposób przyszłe zarobki oraz realną siłę nabywczą wynagrodzenia i emerytury [41].
@@ -63,7 +63,7 @@ Raport z użycia dla administratora (format XLS [61]) musi zawierać zaktualizow
 *   Dodatkowo, dla pełnej analizy, zaleca się zapisanie użytego **Wariantu Prognozy FUS20** oraz ewentualnych ręcznych zmian kluczowych parametrów makroekonomicznych (np. wskaźnika realnego wzrostu wynagrodzenia).
 
 # Dalsza część
-# Dokumentacja Projektu: Symulator Emerytalny ZUS (FUS20)
+# Dokumentacja Projektu: ZUS na Plus (FUS20)
 
 ## 1. Wstęp i Cel Projektu
 Projekt "Symulator emerytalny" jest zaawansowanym narzędziem edukacyjnym, opracowanym w celu zwiększenia świadomości społeczeństwa, zwłaszcza osób wkraczających na rynek pracy, na temat ryzyka starości. Celem jest przybliżenie perspektywy przyszłych zarobków, realnej siły nabywczej wynagrodzenia oraz przewidywanej wysokości świadczenia emerytalnego.

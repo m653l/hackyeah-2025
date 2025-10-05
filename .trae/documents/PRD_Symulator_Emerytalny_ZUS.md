@@ -1,8 +1,8 @@
-# Dokument Wymagań Produktowych - Symulator Emerytalny ZUS (Hackathon 2025)
+# Dokument Wymagań Produktowych - ZUS na Plus ()
 
 ## 1. Product Overview
 
-Symulator Emerytalny ZUS to zaawansowane narzędzie edukacyjne do prognozowania wysokości emerytury, wykorzystujące moduły aktuarialne FUS20. Aplikacja umożliwia użytkownikom precyzyjne oszacowanie przyszłych świadczeń emerytalnych na podstawie danych historycznych i prognoz demograficzno-ekonomicznych do 2080 roku.
+ZUS na Plus to zaawansowane narzędzie edukacyjne do prognozowania wysokości emerytury, wykorzystujące moduły aktuarialne FUS20. Aplikacja umożliwia użytkownikom precyzyjne oszacowanie przyszłych świadczeń emerytalnych na podstawie danych historycznych i prognoz demograficzno-ekonomicznych do 2080 roku.
 
 Produkt rozwiązuje problem braku dostępu do profesjonalnych narzędzi prognostycznych dla obywateli, oferując transparentne i naukowe podejście do planowania emerytalnego. Docelowymi użytkownikami są wszyscy ubezpieczeni w systemie ZUS oraz doradcy finansowi.
 

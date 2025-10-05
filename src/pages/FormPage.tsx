@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calculator, User, Calendar, DollarSign, Settings } from 'lucide-react';
+import { Calculator, User, Calendar, DollarSign, Settings, ArrowLeft, HelpCircle, Info } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { calculatePension, type FUS20Parameters, type PersonData, type HistoricalSalary, type SicknessPeriod } from '../utils/actuarialCalculations';
 import { ProfessionalContext } from '../components/ProfessionalContext';
@@ -16,7 +16,9 @@ import {
   getSessionId,
   type SimulationData 
 } from '../utils/supabaseService';
-// import logoUrl from '/logo.png?url';
+import { Button } from '../components/ui/Button';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
 
 const formSchema = z.object({
   age: z.number().min(18, 'Wiek musi być większy niż 18 lat').max(67, 'Wiek nie może przekraczać 67 lat'),
@@ -351,12 +353,12 @@ const FormPage: React.FC = () => {
         
         // Wyniki kalkulacji
         pensionAmount: pensionResult.monthlyPension,
-        pensionAmountReal: pensionResult.realPensionValue || pensionResult.monthlyPension,
+        pensionAmountReal: pensionResult.monthlyPensionReal || pensionResult.realPensionValue || pensionResult.monthlyPension,
         replacementRate: pensionResult.replacementRate,
-        withSickness: pensionResult.sickLeaveImpact || 0,
-        withoutSickness: pensionResult.monthlyPension,
+        withSickness: pensionResult.withSickness || pensionResult.sickLeaveImpact || 0,
+        withoutSickness: pensionResult.withoutSickness || pensionResult.monthlyPension,
         initialCapital: pensionResult.initialCapital,
-        estimatedSavings: pensionResult.totalContributions || 0,
+        estimatedSavings: pensionResult.estimatedSavings || pensionResult.totalContributions || 0,
         totalContributions: pensionResult.totalContributions,
         
         // Metadane
@@ -410,341 +412,263 @@ const FormPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+    <div className="min-h-screen bg-zus-gray-50">
+
+
+      <div className="max-w-4xl mx-auto py-6 md:py-12 px-4 sm:px-6 lg:px-8">
+        {/* Progress indicator */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center space-x-4 mb-4">
             <div className="flex items-center">
-              <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
-                <img 
-                  src="/logo.png" 
-                  alt="ZUS Logo" 
-                  className="h-10 w-10 object-contain" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'block';
-                  }}
-                />
-                <Calculator className="h-10 w-10 text-white" style={{ display: 'none' }} />
+              <div className="bg-zus-green-primary text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
+                1
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-zus-navy">
-                  ZUS na Plus
-                </h1>
-                <p className="text-sm text-slate-600">Hackathon 2025</p>
-              </div>
+              <span className="ml-2 text-sm font-medium text-zus-green-primary">Dane osobowe</span>
             </div>
-            <nav className="hidden md:flex space-x-1">
-              <Link
-                to="/"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
-              >
-                Strona główna
-              </Link>
-              <span className="px-4 py-2 text-zus-orange bg-zus-orange/10 rounded-lg font-medium">
-                Symulacja
-              </span>
-              <Link
-                to="/dashboard"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/admin"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium flex items-center"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
-              </Link>
-            </nav>
+            <div className="w-12 h-0.5 bg-zus-gray-300"></div>
+            <div className="flex items-center">
+              <div className="bg-zus-gray-300 text-zus-gray-600 rounded-full w-8 h-8 flex items-center justify-center text-sm font-medium">
+                2
+              </div>
+              <span className="ml-2 text-sm text-zus-gray-600">Wyniki</span>
+            </div>
           </div>
         </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-zus-navy mb-4">
-              Formularz danych osobowych
-            </h2>
+        
+        <Card className="max-w-3xl mx-auto">
+          <CardHeader className="text-center">
+            <CardTitle as="h1" className="text-2xl md:text-3xl mb-2">
+              Oblicz swoją przyszłą emeryturę
+            </CardTitle>
             <p className="text-zus-gray-600">
-              Wprowadź swoje dane, aby otrzymać prognozę wysokości emerytury
+              Wprowadź swoje dane, aby otrzymać realistyczną prognozę wysokości emerytury z ZUS. 
+              Wszystkie obliczenia bazują na oficjalnych danych aktuarialnych.
             </p>
-          </div>
+          </CardHeader>
+          
+          <CardContent>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form id="pension-form" onSubmit={handleSubmit(onSubmit)} className="space-y-8">
             {/* Basic Information */}
-            <div className="bg-zus-gray-50 p-6 rounded-lg">
-              <h3 className="text-xl font-semibold text-zus-navy mb-4 flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Dane podstawowe
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="age" className="block text-sm font-medium text-zus-navy mb-2">
-                    Wiek (lata) *
-                  </label>
-                  <input
+            <Card variant="default" className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <User className="h-5 w-5 mr-2 text-zus-green-primary" />
+                  Dane podstawowe
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Input
+                    label="Wiek (lata)"
                     type="number"
-                    id="age"
-                    {...register('age', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
                     placeholder="30"
+                    required
+                    {...register('age', { valueAsNumber: true })}
+                    error={errors.age?.message}
+                    helpText="Podaj swój aktualny wiek"
                   />
-                  {errors.age && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.age.message}</p>
-                  )}
-                </div>
 
-                <div>
-                  <label htmlFor="gender" className="block text-sm font-medium text-zus-navy mb-2">
-                    Płeć *
-                  </label>
-                  <select
-                    id="gender"
-                    {...register('gender')}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
-                  >
-                    <option value="male">Mężczyzna</option>
-                    <option value="female">Kobieta</option>
-                  </select>
-                  {errors.gender && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.gender.message}</p>
-                  )}
+                  <div>
+                    <label htmlFor="gender" className="block text-sm font-medium text-zus-gray-900 mb-2">
+                      Płeć <span className="text-zus-red">*</span>
+                    </label>
+                    <select
+                      id="gender"
+                      {...register('gender')}
+                      className="w-full px-3 py-3 border border-zus-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zus-green-primary/20 focus:border-zus-green-primary transition-colors"
+                      aria-describedby="gender-help"
+                    >
+                      <option value="male">Mężczyzna</option>
+                      <option value="female">Kobieta</option>
+                    </select>
+                    <p id="gender-help" className="mt-1 text-sm text-zus-gray-600">
+                      Płeć wpływa na wiek emerytalny i tablice trwania życia
+                    </p>
+                    {errors.gender && (
+                      <p className="mt-1 text-sm text-zus-red" role="alert">{errors.gender.message}</p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Financial Information */}
-            <div className="bg-zus-gray-50 p-6 rounded-lg">
-              <h3 className="text-xl font-semibold text-zus-navy mb-4 flex items-center">
-                <DollarSign className="h-5 w-5 mr-2" />
-                Dane finansowe
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="salary" className="block text-sm font-medium text-zus-navy mb-2">
-                    Wysokość wynagrodzenia brutto (zł) *
-                  </label>
-                  <input
+            <Card variant="default" className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <DollarSign className="h-5 w-5 mr-2 text-zus-green-primary" />
+                  Dane finansowe
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Input
+                    label="Wysokość wynagrodzenia brutto (zł)"
                     type="number"
-                    id="salary"
-                    {...register('salary', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
                     placeholder="5000"
+                    required
+                    {...register('salary', { valueAsNumber: true })}
+                    error={errors.salary?.message}
+                    helpText="Podaj swoje miesięczne wynagrodzenie brutto"
+                    icon={<DollarSign className="h-4 w-4" />}
                   />
-                  {errors.salary && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.salary.message}</p>
-                  )}
-                </div>
 
-                <div>
-                  <label htmlFor="currentSavings" className="block text-sm font-medium text-zus-navy mb-2">
-                    Zgromadzone środki na koncie ZUS (zł)
-                  </label>
-                  <input
+                  <Input
+                    label="Zgromadzone środki na koncie ZUS (zł)"
                     type="number"
-                    id="currentSavings"
-                    {...register('currentSavings', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
                     placeholder="0"
+                    {...register('currentSavings', { valueAsNumber: true })}
+                    error={errors.currentSavings?.message}
+                    helpText="Opcjonalnie: środki już zgromadzone na koncie i subkoncie ZUS"
                   />
-                  {errors.currentSavings && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.currentSavings.message}</p>
-                  )}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Work History */}
-            <div className="bg-zus-gray-50 p-6 rounded-lg">
-              <h3 className="text-xl font-semibold text-zus-navy mb-4 flex items-center">
-                <Calendar className="h-5 w-5 mr-2" />
-                Historia zatrudnienia
-              </h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="workStartYear" className="block text-sm font-medium text-zus-navy mb-2">
-                    Rok rozpoczęcia pracy *
-                  </label>
-                  <input
+            <Card variant="default" className="mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center text-lg">
+                  <Calendar className="h-5 w-5 mr-2 text-zus-green-primary" />
+                  Historia zatrudnienia
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Input
+                    label="Rok rozpoczęcia pracy"
                     type="number"
-                    id="workStartYear"
-                    {...register('workStartYear', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
                     placeholder="2020"
+                    required
+                    {...register('workStartYear', { valueAsNumber: true })}
+                    error={errors.workStartYear?.message}
+                    helpText="Rok, w którym rozpocząłeś pierwszą pracę"
                   />
-                  {errors.workStartYear && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.workStartYear.message}</p>
-                  )}
-                </div>
 
-                <div>
-                  <label htmlFor="retirementYear" className="block text-sm font-medium text-zus-navy mb-2">
-                    Planowany rok zakończenia aktywności *
-                  </label>
-                  <input
-                    type="number"
-                    id="retirementYear"
-                    {...register('retirementYear', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
-                    placeholder={getSuggestedRetirementYear(age || 30, 'male').toString()}
-                  />
-                  {errors.retirementYear && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.retirementYear.message}</p>
-                  )}
-                  <p className="mt-1 text-sm text-zus-gray-500">
-                    Sugerowany rok emerytury: {getSuggestedRetirementYear(age || 30, watch('gender') || 'male')}
-                  </p>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label htmlFor="contributionPeriod" className="block text-sm font-medium text-zus-navy mb-2">
-                    Staż składkowy/nieskładkowy na 31.12.1998 (lata)
-                  </label>
-                  <input
-                    type="number"
-                    id="contributionPeriod"
-                    {...register('contributionPeriod', { valueAsNumber: true })}
-                    className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
-                    placeholder="0"
-                  />
-                  {errors.contributionPeriod && (
-                    <p className="mt-1 text-sm text-zus-red">{errors.contributionPeriod.message}</p>
-                  )}
-                  <p className="mt-1 text-sm text-zus-gray-500">
-                    Dotyczy osób urodzonych przed 1969 rokiem
-                  </p>
-                </div>
-
-                <div className="md:col-span-2">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="includeSickLeave"
-                      {...register('includeSickLeave')}
-                      className="h-4 w-4 text-zus-orange focus:ring-zus-orange border-zus-gray-300 rounded"
+                  <div>
+                    <Input
+                      label="Planowany rok zakończenia aktywności"
+                      type="number"
+                      placeholder={getSuggestedRetirementYear(age || 30, 'male').toString()}
+                      required
+                      {...register('retirementYear', { valueAsNumber: true })}
+                      error={errors.retirementYear?.message}
                     />
-                    <label htmlFor="includeSickLeave" className="ml-2 block text-sm text-zus-navy">
-                      Uwzględnij zwolnienia lekarskie w kalkulacji
-                    </label>
+                    <div className="mt-2 p-3 bg-zus-blue/10 rounded-lg border border-zus-blue/20">
+                      <div className="flex items-center text-sm text-zus-blue">
+                        <Info className="h-4 w-4 mr-2" />
+                        <span className="font-medium">
+                          Sugerowany rok emerytury: {getSuggestedRetirementYear(age || 30, watch('gender') || 'male')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zus-gray-600 mt-1">
+                        Bazuje na ustawowym wieku emerytalnym (K: 60 lat, M: 65 lat)
+                      </p>
+                    </div>
                   </div>
-                  <p className="mt-1 text-sm text-zus-gray-500">
-                    Opcja uwzględnia statystyczny wpływ zwolnień lekarskich na wysokość emerytury
-                  </p>
+
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Staż składkowy/nieskładkowy na 31.12.1998 (lata)"
+                      type="number"
+                      placeholder="0"
+                      {...register('contributionPeriod', { valueAsNumber: true })}
+                      error={errors.contributionPeriod?.message}
+                      helpText="Dotyczy osób urodzonych przed 1969 rokiem - wpływa na kapitał początkowy"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <div className="flex items-start space-x-3 p-4 bg-zus-gray-50 rounded-lg border border-zus-gray-200">
+                      <input
+                        type="checkbox"
+                        id="includeSickLeave"
+                        {...register('includeSickLeave')}
+                        className="mt-1 h-4 w-4 text-zus-green-primary focus:ring-zus-green-primary/20 border-zus-gray-300 rounded"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="includeSickLeave" className="block text-sm font-medium text-zus-gray-900">
+                          Uwzględnij zwolnienia lekarskie w kalkulacji
+                        </label>
+                        <p className="mt-1 text-sm text-zus-gray-600">
+                          Opcja uwzględnia statystyczny wpływ zwolnień lekarskich na wysokość emerytury 
+                          (średnio 2-3% redukcji składek rocznie)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Professional Context */}
-            <ProfessionalContext
-              selectedGroupId={selectedProfessionalGroup}
-              onGroupSelect={(groupId) => {
-                setSelectedProfessionalGroup(groupId);
-                setValue('professionalGroup', groupId);
-              }}
-            />
+            <div className="mb-6">
+              <ProfessionalContext
+                selectedGroupId={selectedProfessionalGroup}
+                onGroupSelect={(groupId) => {
+                  setSelectedProfessionalGroup(groupId);
+                  setValue('professionalGroup', groupId);
+                }}
+              />
+            </div>
 
-            {/* Submit Button */}
-            <div 
-              className="w-full"
-              style={{
-                display: 'flex',
-                flexDirection: 'row',
-                gap: '12px',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                marginTop: '24px'
-              }}
-            >
-              <Link
-                to="/"
-                style={{
-                  padding: '12px 24px',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '6px',
-                  color: '#1e3a8a',
-                  backgroundColor: 'white',
-                  textDecoration: 'none',
-                  textAlign: 'center',
-                  minWidth: '120px',
-                  display: 'inline-block'
-                }}
-              >
-                Anuluj
-              </Link>
-              <button
-                type="button"
-                onClick={handleClearForm}
-                style={{
-                  padding: '12px 24px',
-                  border: '1px solid #dc2626',
-                  borderRadius: '6px',
-                  color: '#dc2626',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  minWidth: '160px'
-                }}
-              >
-                Wyczyść formularz
-              </button>
-              <button
-                type="button"
-                onClick={refreshDashboardParameters}
-                style={{
-                  padding: '12px 24px',
-                  border: '1px solid #2563eb',
-                  borderRadius: '6px',
-                  color: '#2563eb',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                  minWidth: '160px'
-                }}
-              >
-                Odśwież Dashboard
-              </button>
-              <button
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-zus-gray-200">
+              <div className="flex flex-col sm:flex-row gap-3 flex-1">
+                <Link to="/" className="sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    size="medium" 
+                    className="w-full sm:w-auto border-zus-gray-300 text-zus-gray-700 hover:bg-zus-gray-100 hover:border-zus-gray-500 hover:text-zus-gray-800"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Anuluj
+                  </Button>
+                </Link>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="medium"
+                  onClick={handleClearForm}
+                  className="w-full sm:w-auto border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700"
+                >
+                  Wyczyść formularz
+                </Button>
+              </div>
+              
+              <Button
                 type="submit"
+                variant="primary"
+                size="large"
                 disabled={isSubmitting}
-                style={{
-                  padding: '16px 32px',
-                  backgroundColor: 'rgb(0, 153, 63)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  opacity: isSubmitting ? 0.5 : 1,
-                  minWidth: '200px',
-                  transition: 'background-color 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting) {
-                    e.currentTarget.style.backgroundColor = 'rgb(0, 133, 53)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSubmitting) {
-                    e.currentTarget.style.backgroundColor = 'rgb(0, 153, 63)';
-                  }
-                }}
+                className="w-full sm:w-auto sm:min-w-[220px] bg-zus-green-primary hover:bg-zus-green-primary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
               >
-                {isSubmitting ? 'Obliczanie...' : 'Oblicz prognozę emerytury'}
-              </button>
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Obliczanie...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="h-5 w-5 mr-2" />
+                    Oblicz prognozę emerytury
+                  </>
+                )}
+              </Button>
             </div>
           </form>
 
-          {/* Advanced Dashboard - poza formularzem */}
-          <div className="mt-8">
-            <AdvancedDashboard
-              onParameterChange={handleParameterChange}
-              currentParameters={dashboardParameters}
-            />
-          </div>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Dashboard - poza główną kartą */}
+        <div className="mt-8">
+          <AdvancedDashboard
+            onParameterChange={handleParameterChange}
+            currentParameters={dashboardParameters}
+          />
         </div>
       </div>
     </div>

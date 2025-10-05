@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, TrendingUp, Calendar, Calculator, BarChart3, Sliders, RotateCcw } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 
 interface AdvancedDashboardProps {
   onParameterChange: (parameter: string, value: any) => void;
@@ -143,56 +144,57 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
   ];
 
   return (
-    <div className="w-full bg-white rounded-lg shadow p-6">
-      <div className="mb-6">
+    <Card variant="default" className="w-full">
+      <CardHeader>
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-              <Settings className="h-5 w-5" />
+            <CardTitle className="text-lg font-semibold text-zus-gray-900 mb-2 flex items-center gap-2">
+              <Settings className="h-5 w-5 text-zus-green-primary" />
               Dashboard Zaawansowany
-            </h3>
-            <p className="text-sm text-gray-600">
+            </CardTitle>
+            <p className="text-sm text-zus-gray-600">
               Modyfikuj parametry i założenia do obliczeń emerytalnych
             </p>
           </div>
           <button
             type="button"
             onClick={handleResetSettings}
-            className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 flex items-center gap-1"
+            className="px-3 py-1 bg-zus-gray-500 text-white rounded text-sm hover:bg-zus-gray-600 flex items-center gap-1"
             title="Resetuj wszystkie ustawienia dashboard"
           >
             <RotateCcw className="h-3 w-3" />
             Resetuj ustawienia
           </button>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Zakładki */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                  activeTab === tab.id
-                    ? 'border-zus-orange text-zus-orange'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <CardContent>
+        {/* Zakładki */}
+        <div className="border-b border-zus-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleTabChange(tab.id)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                    activeTab === tab.id
+                      ? 'border-zus-green-primary text-zus-green-primary'
+                      : 'border-transparent text-zus-gray-500 hover:text-zus-gray-700 hover:border-zus-gray-300'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-      {/* Zawartość zakładek */}
-      <div className="space-y-6">
+        {/* Zawartość zakładek */}
+        <div className="space-y-6">
         {activeTab === 'historical' && (
           <HistoricalDataPanel 
             onParameterChange={handleParameterChange}
@@ -236,8 +238,9 @@ export const AdvancedDashboard: React.FC<AdvancedDashboardProps> = ({
             currentParameters={currentParameters}
           />
         )}
-      </div>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -278,7 +281,7 @@ const HistoricalDataPanel: React.FC<{
         <button
           type="button"
           onClick={addHistoricalSalary}
-          className="px-3 py-1 bg-zus-orange text-white rounded text-sm hover:bg-orange-600"
+          className="px-3 py-1 bg-zus-green-primary text-white rounded text-sm hover:bg-zus-green-primary/90"
         >
           Dodaj rok
         </button>
@@ -457,7 +460,7 @@ const SicknessPeriodsPanel: React.FC<{
         <button
           type="button"
           onClick={addSicknessPeriod}
-          className="px-3 py-1 bg-zus-orange text-white rounded text-sm hover:bg-orange-600"
+          className="px-3 py-1 bg-zus-green-primary text-white rounded text-sm hover:bg-zus-green-primary/90"
         >
           Dodaj okres
         </button>
@@ -606,7 +609,7 @@ const ZUSAccountPanel: React.FC<{
             type="checkbox"
             checked={currentParameters.showAccountGrowth || false}
             onChange={(e) => onParameterChange('showAccountGrowth', e.target.checked)}
-            className="h-4 w-4 text-zus-orange focus:ring-zus-orange border-gray-300 rounded"
+            className="h-4 w-4 text-zus-green-primary focus:ring-zus-green-primary border-gray-300 rounded"
           />
         </div>
 
@@ -618,7 +621,7 @@ const ZUSAccountPanel: React.FC<{
             type="checkbox"
             checked={currentParameters.includeValorization || true}
             onChange={(e) => onParameterChange('includeValorization', e.target.checked)}
-            className="h-4 w-4 text-zus-orange focus:ring-zus-orange border-gray-300 rounded"
+            className="h-4 w-4 text-zus-green-primary focus:ring-zus-green-primary border-gray-300 rounded"
           />
         </div>
       </div>
@@ -689,7 +692,7 @@ const FUS20VariantsPanel: React.FC<{
             key={variant.id}
             className={`p-4 border rounded-lg cursor-pointer transition-colors ${
               currentParameters.fus20Variant === variant.id
-                ? 'border-zus-orange bg-orange-50'
+                ? 'border-zus-green-primary bg-green-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
             onClick={() => {
@@ -713,7 +716,7 @@ const FUS20VariantsPanel: React.FC<{
                         onParameterChange(key, value);
                       });
                     }}
-                    className="h-4 w-4 text-zus-orange focus:ring-zus-orange"
+                    className="h-4 w-4 text-zus-green-primary focus:ring-zus-green-primary"
                   />
                   <h5 className="font-medium text-gray-900">{variant.name}</h5>
                 </div>

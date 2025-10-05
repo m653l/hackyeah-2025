@@ -1,5 +1,5 @@
 {
-  "Projekt": "Symulator Emerytalny ZUS (Hackathon 2025)",
+  "Projekt": "ZUS na Plus ()",
   "Cel_Glowny": "Narzędzie edukacyjne do prognozowania wysokości emerytury, z modułami aktuarialnymi FUS20",
   "Wymagania_Podstawowe": [
     {"ID": "R004", "Opis": "Integracja danych: Prognoza FUS20 (2022) do 2080 roku [1, 6, 36], Prognoza Demograficzna MF z 2022 r. [37, 38], GUS, NBP, MF", "Status": "Obowiązkowy"},

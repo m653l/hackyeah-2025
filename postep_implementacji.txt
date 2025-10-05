@@ -1,5 +1,5 @@
-# POSTĘP IMPLEMENTACJI - SYMULATOR EMERYTALNY ZUS
-# Hackathon 2025 - Tracking zadań krytycznych
+# POSTĘP IMPLEMENTACJI - ZUS na Plus
+#  - Tracking zadań krytycznych
 
 ## STATUS OGÓLNY
 🎯 **Cel:** Implementacja 4 funkcjonalności o priorytecie krytycznym

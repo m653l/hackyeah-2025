@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 // import logoUrl from '/logo.png?url';
 import AnimatedNumber from '../components/AnimatedNumber';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
 import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -363,61 +364,8 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zus-orange/5 to-zus-green/5">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <div className="bg-gradient-to-br from-zus-orange to-zus-orange/80 p-2 rounded-lg mr-3">
-                <img 
-                  src="/logo.png" 
-                  alt="ZUS Logo" 
-                  className="h-10 w-10 object-contain" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'block';
-                  }}
-                />
-                <BarChart3 className="h-10 w-10 text-white" style={{ display: 'none' }} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-zus-navy">
-                  ZUS na Plus
-                </h1>
-                <p className="text-sm text-slate-600">Hackathon 2025</p>
-              </div>
-            </div>
-            <nav className="hidden md:flex space-x-1">
-              <Link
-                to="/"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
-              >
-                Strona główna
-              </Link>
-              <Link
-                to="/formularz"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium"
-              >
-                Symulacja
-              </Link>
-              <span className="px-4 py-2 text-zus-orange bg-zus-orange/10 rounded-lg font-medium">
-                Dashboard
-              </span>
-              <Link
-                to="/admin"
-                className="px-4 py-2 text-zus-navy hover:text-zus-orange hover:bg-zus-orange/5 rounded-lg transition-all duration-200 font-medium flex items-center"
-              >
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-zus-green-primary/5 to-zus-blue/5">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-zus-navy mb-4">
@@ -429,18 +377,21 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Scenario Selection */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h3 className="text-xl font-semibold text-zus-navy mb-4 flex items-center">
-            <Settings className="h-5 w-5 mr-2" />
-            Wybór wariantu FUS20
-          </h3>
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Wybór wariantu FUS20
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
           <div className="grid md:grid-cols-3 gap-4">
             {fus20Scenarios.map((scenario) => (
               <div
                 key={scenario.id}
                 className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                   selectedScenario === scenario.id
-                    ? 'border-zus-orange bg-zus-orange/5'
+                    ? 'border-zus-green-primary bg-zus-green-primary/5'
                     : 'border-zus-gray-200 hover:border-zus-gray-300'
                 }`}
                 onClick={() => handleScenarioChange(scenario.id)}
@@ -464,15 +415,19 @@ const DashboardPage: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Custom Parameters */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h3 className="text-xl font-semibold text-zus-navy mb-4 flex items-center">
-            <Sliders className="h-5 w-5 mr-2" />
-            Modyfikacja założeń makroekonomicznych
-          </h3>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Sliders className="h-5 w-5 mr-2" />
+              Modyfikacja założeń makroekonomicznych
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             <div>
               <label className="block text-sm font-medium text-zus-navy mb-2">
                 Stopa bezrobocia (%)
@@ -482,7 +437,7 @@ const DashboardPage: React.FC = () => {
                 step="0.1"
                 value={customParams.unemploymentRate}
                 onChange={(e) => handleParameterChange('unemploymentRate', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:border-transparent"
               />
             </div>
             <div>
@@ -494,7 +449,7 @@ const DashboardPage: React.FC = () => {
                 step="0.1"
                 value={customParams.wageGrowth}
                 onChange={(e) => handleParameterChange('wageGrowth', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:border-transparent"
               />
             </div>
             <div>
@@ -506,7 +461,7 @@ const DashboardPage: React.FC = () => {
                 step="0.1"
                 value={customParams.inflation}
                 onChange={(e) => handleParameterChange('inflation', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:border-transparent"
               />
             </div>
             <div>
@@ -518,19 +473,19 @@ const DashboardPage: React.FC = () => {
                 step="0.1"
                 value={customParams.contributionCollection}
                 onChange={(e) => handleParameterChange('contributionCollection', parseFloat(e.target.value))}
-                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:border-transparent"
               />
             </div>
           </div>
           <div className="mt-4 flex gap-4">
-            <button 
+            <button
               onClick={handleRecalculateForecasts}
               disabled={isRecalculating}
-              className={`px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-zus-orange focus:ring-offset-2 flex items-center ${
+              className={`px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:ring-offset-2 flex items-center ${
                 isRecalculating 
-                  ? 'bg-zus-gray-400 text-white cursor-not-allowed' 
-                  : 'bg-zus-orange text-white hover:bg-zus-orange/90'
-              }`}
+                  ? 'bg-zus-gray-300 text-zus-gray-500 cursor-not-allowed' 
+                  : 'bg-zus-green-primary text-white hover:bg-zus-green-primary/90'
+            }`}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
               {isRecalculating ? 'Przeliczanie...' : 'Przelicz prognozy'}
@@ -540,47 +495,57 @@ const DashboardPage: React.FC = () => {
               Eksportuj dane
             </button>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Charts Grid */}
-        <div className="grid lg:grid-cols-2 gap-8 mb-8">
-          <div className={`bg-white rounded-lg shadow-lg p-6 transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {isRecalculating ? (
-              <div className="h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-                <div className="text-gray-500">Przeliczanie danych...</div>
-              </div>
-            ) : (
-              <Line data={demographicChartData} options={demographicOptions} />
-            )}
-          </div>
-          <div className={`bg-white rounded-lg shadow-lg p-6 transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {isRecalculating ? (
-              <div className="h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-                <div className="text-gray-500">Przeliczanie danych...</div>
-              </div>
-            ) : (
-              <Bar data={fundBalanceData} options={fundBalanceOptions} />
-            )}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 mb-8">
+          <Card className={`transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <CardContent>
+              {isRecalculating ? (
+                <div className="h-64 bg-zus-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <div className="text-zus-gray-500">Przeliczanie danych...</div>
+                </div>
+              ) : (
+                <Line data={demographicChartData} options={demographicOptions} />
+              )}
+            </CardContent>
+          </Card>
+          <Card className={`transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <CardContent>
+              {isRecalculating ? (
+                <div className="h-64 bg-zus-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <div className="text-zus-gray-500">Przeliczanie danych...</div>
+                </div>
+              ) : (
+                <Bar data={fundBalanceData} options={fundBalanceOptions} />
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
-          <div className={`bg-white rounded-lg shadow-lg p-6 transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
-            {isRecalculating ? (
-              <div className="h-64 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-                <div className="text-gray-500">Przeliczanie danych...</div>
-              </div>
-            ) : (
-              <Line data={replacementRateData} options={replacementRateOptions} />
-            )}
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mb-8">
+          <Card className={`transition-opacity duration-500 ${chartsVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <CardContent>
+              {isRecalculating ? (
+                <div className="h-64 bg-zus-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+                  <div className="text-zus-gray-500">Przeliczanie danych...</div>
+                </div>
+              ) : (
+                <Line data={replacementRateData} options={replacementRateOptions} />
+              )}
+            </CardContent>
+          </Card>
           
           {/* Key Indicators */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-xl font-semibold text-zus-navy mb-4">
-              Kluczowe wskaźniki systemu emerytalnego
-            </h3>
-            <div className="grid md:grid-cols-2 gap-6">
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle>
+                Kluczowe wskaźniki systemu emerytalnego
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-zus-gray-50 rounded-lg">
                   <span className="text-zus-gray-600">Współczynnik obciążenia demograficznego</span>
@@ -634,16 +599,20 @@ const DashboardPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* County-Specific Sick Leave Analysis */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h3 className="text-xl font-semibold text-zus-navy mb-4 flex items-center">
-            <MapPin className="h-5 w-5 mr-2" />
-            Szczegółowe okresy chorobowe wg powiatu
-          </h3>
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MapPin className="h-5 w-5 mr-2" />
+              Szczegółowe okresy chorobowe wg powiatu
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-zus-navy mb-2">
                 Wybierz powiat
@@ -651,7 +620,7 @@ const DashboardPage: React.FC = () => {
               <select
                 value={selectedCounty}
                 onChange={(e) => setSelectedCounty(e.target.value)}
-                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-orange focus:border-transparent"
+                className="w-full px-3 py-2 border border-zus-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zus-green-primary focus:border-transparent"
               >
                 {COUNTY_PENSION_DATA.map((county) => (
                   <option key={county.name} value={county.name}>
@@ -661,7 +630,7 @@ const DashboardPage: React.FC = () => {
               </select>
             </div>
             <div className="flex items-end">
-              <div className="bg-zus-orange/10 p-4 rounded-lg w-full">
+              <div className="bg-zus-green-primary/10 p-4 rounded-lg w-full">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-zus-gray-600">Przeciętna długość absencji</p>
@@ -669,14 +638,14 @@ const DashboardPage: React.FC = () => {
                       {selectedCountySickLeave?.averageAbsenceDays || 'N/A'} dni
                     </p>
                   </div>
-                  <Activity className="h-8 w-8 text-zus-orange" />
+                  <Activity className="h-8 w-8 text-zus-green-primary" />
                 </div>
               </div>
             </div>
           </div>
           
           {selectedCountySickLeave && (
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <div>
                 <h4 className="font-semibold text-zus-navy mb-3">Statystyki absencji</h4>
                 <div className="space-y-2 text-sm">
@@ -739,25 +708,28 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Account Balance Projection */}
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-semibold text-zus-navy flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2" />
-              Podgląd zgromadzonych środków ZUS
-            </h3>
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2" />
+                Podgląd zgromadzonych środków ZUS
+              </CardTitle>
             <button
               onClick={() => setShowAccountProjection(!showAccountProjection)}
-              className="bg-zus-orange text-white px-4 py-2 rounded-md hover:bg-zus-orange/90 transition-colors"
+              className="bg-zus-green-primary text-white px-4 py-2 rounded-md hover:bg-zus-green-primary/90 transition-colors"
             >
               {showAccountProjection ? 'Ukryj projekcję' : 'Pokaż projekcję'}
             </button>
           </div>
-          
-          {showAccountProjection && (
-            <div className="grid lg:grid-cols-2 gap-6">
+          </CardHeader>
+          <CardContent>
+            {showAccountProjection && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
               <div>
                 <h4 className="font-semibold text-zus-navy mb-3">Projekcja konta głównego</h4>
                 <Line 
@@ -826,9 +798,9 @@ const DashboardPage: React.FC = () => {
             </div>
           )}
           
-          <div className="mt-6 grid md:grid-cols-4 gap-4">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-zus-gray-50 p-4 rounded-lg text-center">
-              <DollarSign className="h-6 w-6 text-zus-orange mx-auto mb-2" />
+              <DollarSign className="h-6 w-6 text-zus-green-primary mx-auto mb-2" />
               <p className="text-sm text-zus-gray-600">Łączne środki (2024)</p>
               <p className="text-lg font-bold text-zus-navy">
                 {new Intl.NumberFormat('pl-PL').format(
@@ -838,7 +810,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div className="bg-zus-gray-50 p-4 rounded-lg text-center">
-              <Calendar className="h-6 w-6 text-zus-green mx-auto mb-2" />
+              <Calendar className="h-6 w-6 text-zus-green-primary mx-auto mb-2" />
               <p className="text-sm text-zus-gray-600">Prognoza na emeryturę</p>
               <p className="text-lg font-bold text-zus-navy">
                 {new Intl.NumberFormat('pl-PL').format(
@@ -849,7 +821,7 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div className="bg-zus-gray-50 p-4 rounded-lg text-center">
-              <TrendingUp className="h-6 w-6 text-zus-blue mx-auto mb-2" />
+              <TrendingUp className="h-6 w-6 text-zus-green-primary mx-auto mb-2" />
               <p className="text-sm text-zus-gray-600">Średni wzrost roczny</p>
               <p className="text-lg font-bold text-zus-navy">
                 {((accountProjection.totalContributions / accountProjection.years.length) / 1000).toFixed(0)}k zł
@@ -857,21 +829,25 @@ const DashboardPage: React.FC = () => {
             </div>
             
             <div className="bg-zus-gray-50 p-4 rounded-lg text-center">
-              <AlertTriangle className="h-6 w-6 text-zus-red mx-auto mb-2" />
+              <AlertTriangle className="h-6 w-6 text-zus-orange mx-auto mb-2" />
               <p className="text-sm text-zus-gray-600">Ryzyko inflacyjne</p>
               <p className="text-lg font-bold text-zus-navy">
                 {customParams.inflation.toFixed(1)}% rocznie
               </p>
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Regional Analysis */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h3 className="text-xl font-semibold text-zus-navy mb-4">
-            Analiza regionalna i zawodowa
-          </h3>
-          <div className="grid md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Analiza regionalna i zawodowa
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <div>
               <h4 className="font-semibold text-zus-navy mb-3">Przeciętne emerytury wg województw</h4>
               <div className="space-y-2 text-sm">
@@ -935,7 +911,8 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

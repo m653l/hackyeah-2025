@@ -65,6 +65,11 @@ interface PensionCalculationResult {
   initialCapital: number;
   valorizedContributions: number;
   sickLeaveImpact: number;
+  // Dodatkowe właściwości używane w FormPage
+  monthlyPensionReal?: number;
+  withSickness?: number;
+  withoutSickness?: number;
+  estimatedSavings?: number;
 }
 
 // Eksporty interfejsów
